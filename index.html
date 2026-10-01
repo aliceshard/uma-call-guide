@@ -1,0 +1,1155 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>우마무스메 라이브 콜 가이드</title>
+<meta name="description" content="우마무스메 라이브 이벤트를 위한 비공식 팬 제작 콜 가이드 — 영상에 맞춰 가사·콜·동작 타이밍 확인">
+<meta name="theme-color" content="#121A17">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────
+   디자인 토큰 — 색은 여기서만 바꾸면 됩니다 (라이트/다크 각각)
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --bg:#F2F4EE; --surface:#FFFFFF; --raised:#E6EBE2; --line:rgba(22,40,30,.13);
+  --text:#16211B; --muted:#5B6A61; --turf:#2F7A4D; --turf-soft:rgba(47,122,77,.14);
+  --call:#D3236B; --action:#9A5F00; --pron:#5640B4; --jp:#16211B;
+  --rail:#FFFFFF; --shadow:0 10px 30px rgba(10,30,20,.18);
+  --f-display:"Black Han Sans","IBM Plex Sans KR",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --f-jp:"Noto Sans JP","Hiragino Sans","IBM Plex Sans KR",sans-serif;
+  --lyric-scale:1;
+  --touch:44px; --radius-s:6px; --radius-m:12px;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121A17; --surface:#18221E; --raised:#22302A; --line:rgba(226,236,228,.12);
+    --text:#E9EEE6; --muted:#93A39A; --turf:#4FA874; --turf-soft:rgba(79,168,116,.16);
+    --call:#FF73AB; --action:#F2B743; --pron:#C6B6FF; --jp:#E9EEE6;
+    --rail:#DDE5DC; --shadow:0 10px 30px rgba(0,0,0,.45);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121A17; --surface:#18221E; --raised:#22302A; --line:rgba(226,236,228,.12);
+  --text:#E9EEE6; --muted:#93A39A; --turf:#4FA874; --turf-soft:rgba(79,168,116,.16);
+  --call:#FF73AB; --action:#F2B743; --pron:#C6B6FF; --jp:#E9EEE6;
+  --rail:#DDE5DC; --shadow:0 10px 30px rgba(0,0,0,.45);
+  color-scheme:dark;
+}
+html{ height:100%; scroll-padding-top:env(safe-area-inset-top,0px); -webkit-text-size-adjust:100%; }
+*,*::before,*::after{ box-sizing:border-box; }
+body{
+  margin:0; min-height:100%; background:var(--bg); color:var(--text);
+  font:16px/1.6 var(--f-body); word-break:keep-all; overflow-wrap:anywhere;
+  -webkit-tap-highlight-color:transparent;
+}
+body.song-mode{ height:100%; overflow:hidden; }
+#app{ min-height:100%; }
+body.song-mode #app{ height:100%; }
+button{ font:inherit; color:inherit; }
+a{ color:inherit; }
+:focus-visible{ outline:2px solid var(--turf); outline-offset:2px; border-radius:4px; }
+[hidden]{ display:none !important; }
+.num{ font-variant-numeric:tabular-nums; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+svg.i{ width:1em; height:1em; flex:none; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:-.14em; }
+
+/* ── 게이트 번호판 (JRA 게이트 색) — 곡 번호를 표시하는 이 사이트의 상징 ── */
+.gate{
+  --g-bg:#fff; --g-fg:#111;
+  display:inline-grid; place-items:center; flex:none;
+  width:2.1em; height:2.1em; border-radius:4px;
+  background:var(--g-bg); color:var(--g-fg);
+  font:400 1em/1 var(--f-display); box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);
+}
+
+/* ─────────────────────────── 공통 페이지 ─────────────────────────── */
+.page{ max-width:640px; margin:0 auto; padding:0 20px 56px; }
+.topbar{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:20;
+  display:flex; align-items:center; gap:8px; min-height:56px;
+  padding:6px 8px; background:var(--bg);
+  border-bottom:1px solid var(--line);
+}
+.topbar h1{ margin:0; font:400 1.15rem/1.2 var(--f-display); letter-spacing:.01em; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.icon-btn{
+  display:inline-grid; place-items:center; width:var(--touch); height:var(--touch);
+  border:0; background:transparent; border-radius:50%; cursor:pointer; font-size:1.25rem; flex:none;
+}
+.icon-btn:hover{ background:var(--raised); }
+
+/* ─────────────────────────── 홈 ─────────────────────────── */
+.home-head{ display:flex; justify-content:flex-end; padding:8px 8px 0; max-width:640px; margin:0 auto; }
+.hero{ padding:28px 0 26px; }
+.hero-kicker{ margin:0 0 10px; color:var(--muted); font-size:.92rem; }
+.hero-title{
+  margin:0; font:400 clamp(2.4rem, 11vw, 4rem)/1.04 var(--f-display);
+  letter-spacing:-.01em;
+}
+.hero-title span{ display:block; }
+.hero-meta{ margin:14px 0 0; color:var(--muted); font-size:.95rem; }
+
+/* 레이스 레일 — 홈 히어로 아래 한 줄 */
+.rail{
+  position:relative; height:14px; margin:6px 0 26px;
+  border-top:3px solid var(--rail); border-bottom:3px solid var(--rail);
+  background:repeating-linear-gradient(90deg, transparent 0 46px, var(--rail) 46px 50px);
+  opacity:.55;
+}
+
+.countdown{
+  display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+  padding:16px 18px; margin-bottom:12px; border-radius:var(--radius-m);
+  background:var(--surface); border:1px solid var(--line);
+}
+.cd-dday{ font:400 2rem/1 var(--f-display); color:var(--turf); }
+.cd-clock{ font-size:1.25rem; font-weight:600; font-variant-numeric:tabular-nums; }
+.cd-label{ color:var(--muted); font-size:.9rem; width:100%; }
+
+.today{ padding:16px 18px; margin-bottom:12px; border-radius:var(--radius-m); background:var(--surface); border:1px solid var(--line); }
+.today h2{ margin:0 0 8px; font-size:1rem; }
+.today ol{ list-style:none; margin:0; padding:0; }
+.today li{ display:flex; gap:12px; padding:6px 0; border-top:1px solid var(--line); font-size:.95rem; }
+.today li:first-child{ border-top:0; }
+.today li time{ width:3.2em; font-weight:600; font-variant-numeric:tabular-nums; }
+.today li.past{ color:var(--muted); }
+.today li.now{ color:var(--turf); font-weight:600; }
+
+.go-guide{
+  display:flex; align-items:center; gap:14px; width:100%;
+  padding:18px 18px; margin:0 0 28px; border:0; border-radius:var(--radius-m);
+  background:var(--text); color:var(--bg); cursor:pointer; text-align:left; text-decoration:none;
+}
+.go-guide:hover{ filter:brightness(1.08); }
+.go-guide b{ display:block; font:400 1.35rem/1.2 var(--f-display); }
+.go-guide small{ display:block; opacity:.75; font-size:.9rem; margin-top:2px; }
+.go-guide .chev{ margin-left:auto; font-size:1.3rem; }
+
+.acc{ border-top:1px solid var(--line); }
+.acc:last-of-type{ border-bottom:1px solid var(--line); }
+.acc-btn{
+  display:flex; align-items:center; width:100%; min-height:56px; gap:10px;
+  padding:0 4px; border:0; background:transparent; cursor:pointer; text-align:left;
+  font-size:1.02rem; font-weight:600;
+}
+.acc-btn .chev{ margin-left:auto; transition:transform .2s; color:var(--muted); }
+.acc-btn[aria-expanded="true"] .chev{ transform:rotate(180deg); }
+.acc-panel{ padding:0 4px 20px; color:var(--text); font-size:.95rem; }
+.acc-panel h3{ margin:16px 0 4px; font-size:.95rem; }
+.acc-panel p{ margin:4px 0; }
+.acc-panel ul{ margin:4px 0; padding-left:1.1em; }
+.acc-panel li{ margin:3px 0; }
+.acc-panel .note{ color:var(--muted); font-size:.88rem; }
+.chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.chip{
+  display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 14px;
+  border-radius:999px; border:1px solid var(--line); background:var(--surface);
+  text-decoration:none; font-size:.9rem; cursor:pointer;
+}
+.chip:hover{ background:var(--raised); }
+.notice-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; }
+.notice-grid button{ padding:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--surface); cursor:pointer; text-align:left; }
+.notice-grid img{ display:block; width:100%; aspect-ratio:1; object-fit:cover; }
+.notice-grid span{ display:block; padding:6px 8px; font-size:.82rem; }
+
+.credits{ margin-top:36px; color:var(--muted); font-size:.82rem; text-align:center; }
+
+/* ─────────────────────────── 곡 목록 ─────────────────────────── */
+.guide-head{ padding:22px 0 8px; }
+.guide-head h2{ margin:0 0 4px; font:400 1.6rem/1.2 var(--f-display); }
+.guide-head p{ margin:0; color:var(--muted); font-size:.95rem; }
+.legend{ display:flex; flex-wrap:wrap; gap:6px 14px; margin:14px 0 18px; font-size:.88rem; color:var(--muted); }
+.legend span{ display:inline-flex; align-items:center; gap:5px; }
+.legend .c-call{ color:var(--call); } .legend .c-act{ color:var(--action); }
+
+.song-list{ list-style:none; margin:0; padding:0; border-top:1px solid var(--line); }
+.song-row{
+  display:flex; align-items:center; gap:14px; width:100%; padding:16px 4px;
+  border:0; border-bottom:1px solid var(--line); background:transparent; cursor:pointer; text-align:left;
+  text-decoration:none; font-size:1.1rem;
+}
+.song-row:hover{ background:var(--raised); }
+.song-row .t{ display:block; font-weight:700; font-size:1.08rem; }
+.song-row .m{ display:flex; gap:10px; flex-wrap:wrap; margin-top:2px; font-size:.86rem; color:var(--muted); }
+.song-row .m .c-call{ color:var(--call); font-weight:600; }
+.song-row .chev{ margin-left:auto; color:var(--muted); }
+
+.data-tools{ margin-top:40px; padding:18px; border-radius:var(--radius-m); background:var(--surface); border:1px solid var(--line); }
+.data-tools h3{ margin:0 0 4px; font-size:1rem; }
+.data-tools p{ margin:0 0 10px; color:var(--muted); font-size:.9rem; }
+.data-tools .src{ color:var(--text); font-weight:600; }
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  min-height:40px; padding:0 16px; border-radius:var(--radius-s);
+  border:1px solid var(--line); background:var(--bg); cursor:pointer; font-size:.92rem; font-weight:600;
+}
+.btn:hover{ background:var(--raised); }
+.btn.primary{ background:var(--text); color:var(--bg); border-color:transparent; }
+
+/* ─────────────────────────── 곡 화면 ─────────────────────────── */
+.song-page{ height:100%; display:flex; flex-direction:column; }
+.song-page .topbar{ position:relative; top:auto; flex:none; }
+.song-title-wrap{ flex:1; min-width:0; display:flex; align-items:center; gap:10px; }
+.song-title-wrap .gate{ font-size:.82rem; }
+.song-title-wrap h1{ flex:1; }
+.song-main{ flex:1; min-height:0; display:flex; flex-direction:column; }
+.media{ flex:none; padding:10px 12px 0; }
+.video-frame{
+  position:relative; width:100%; aspect-ratio:16/9; max-height:34vh; margin:0 auto;
+  border-radius:var(--radius-m); overflow:hidden; background:#000;
+}
+.video-frame > div, .video-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+.video-fallback{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  padding:16px; text-align:center; color:#E9EEE6; background:#0E1512; font-size:.9rem;
+}
+.video-fallback b{ font-size:.98rem; }
+.video-fallback a{ color:#9FE0B8; }
+
+/* 코스 진행바 — 곡 전체를 경마 코스처럼. 분홍 눈금 = 콜, 노랑 눈금 = 동작 */
+.course{ padding:12px 4px 8px; }
+.course-track{
+  position:relative; height:26px; cursor:pointer; touch-action:none;
+}
+.course-rail{
+  position:absolute; left:0; right:0; top:8px; height:10px;
+  border-top:2px solid var(--rail); border-bottom:2px solid var(--rail); opacity:.5;
+}
+.course-fill{ position:absolute; left:0; top:10px; height:6px; width:0; background:var(--turf); border-radius:3px; }
+.tick{ position:absolute; top:4px; width:2px; height:18px; margin-left:-1px; border-radius:1px; }
+.tick.call{ background:var(--call); }
+.tick.act{ background:var(--action); height:12px; top:7px; }
+.runner{
+  position:absolute; top:1px; left:0; margin-left:-12px; width:24px; height:24px; font-size:.72rem;
+  transition:left .1s linear;
+}
+.course-meta{ display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:.78rem; color:var(--muted); }
+.course-meta .num{ color:var(--text); font-weight:600; font-size:.85rem; }
+.status{ min-height:1.2em; padding:0 4px; font-size:.8rem; color:var(--muted); }
+
+.lyrics-scroll{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; position:relative; }
+.lyrics{ list-style:none; margin:0 auto; padding:0 12px; max-width:720px; }
+.line{
+  display:flex; gap:12px; width:100%; padding:12px 12px; margin:2px 0;
+  border:0; border-radius:var(--radius-m); background:transparent; cursor:pointer; text-align:left;
+  transition:opacity .2s, background-color .2s;
+}
+.lyrics.playing .line{ opacity:.45; }
+.lyrics.playing .line:hover, .lyrics.playing .line:focus-visible, .lyrics .line.active{ opacity:1; }
+.line.active{ background:var(--raised); box-shadow:inset 3px 0 0 var(--turf); }
+.line-gutter{ flex:none; width:3.1em; display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding-top:.15em; }
+.line-time{ font-size:.76rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+.line.has-call .line-time{ color:var(--call); font-weight:600; }
+.cues{ display:flex; flex-wrap:wrap; gap:3px; font-size:.95rem; }
+.cue-shout,.cue-sing{ color:var(--call); } .cue-clap,.cue-hand,.cue-jump,.cue-cheer{ color:var(--action); }
+.line-body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.r{ display:block; white-space:pre-wrap; }
+.r:empty{ display:none; }
+.r-action{ color:var(--action); font-size:calc(.86rem * var(--lyric-scale)); font-weight:600; }
+.r-jp{ color:var(--jp); font:600 calc(1.06rem * var(--lyric-scale))/1.5 var(--f-jp); }
+.r-pron{ color:var(--pron); font-size:calc(1rem * var(--lyric-scale)); font-weight:600; }
+.r-kr{ color:var(--muted); font-size:calc(.9rem * var(--lyric-scale)); }
+.r-call{ color:var(--call); font-size:calc(1.12rem * var(--lyric-scale)); font-weight:700; }
+.r-empty{ color:var(--muted); font-size:.88rem; opacity:.7; }
+.r .i{ margin:0 .12em; }
+
+body.hide-action .r-action, body.hide-jp .r-jp, body.hide-pron .r-pron,
+body.hide-kr .r-kr, body.hide-call .r-call{ display:none; }
+
+/* 단축모드 — 영상 숨김, 부르는 줄(독음·콜)만 크게 */
+body.compact .video-frame{ display:none; }
+body.compact .r-jp, body.compact .r-kr{ display:none; }
+body.compact .r-pron{ font-size:calc(1.3rem * var(--lyric-scale)); }
+body.compact .r-call{ font-size:calc(1.42rem * var(--lyric-scale)); }
+body.compact .r-action{ font-size:calc(1rem * var(--lyric-scale)); }
+
+/* 지금 줄의 동작 아이콘만 살짝 움직임 */
+@media (prefers-reduced-motion: no-preference){
+  .line.active .cue-hand, .line.active .r .i-hand{ animation:wave .7s ease-in-out infinite alternate; transform-origin:50% 90%; }
+  .line.active .cue-shout, .line.active .r .i-shout{ animation:pulse .5s ease-in-out infinite alternate; }
+  .line.active .cue-jump, .line.active .r .i-jump{ animation:hop .55s ease-in-out infinite alternate; }
+  .line.active .cue-clap, .line.active .r .i-clap{ animation:pulse .35s ease-in-out infinite alternate; }
+}
+@keyframes wave{ from{ transform:rotate(-14deg); } to{ transform:rotate(14deg); } }
+@keyframes pulse{ from{ transform:scale(.9); } to{ transform:scale(1.15); } }
+@keyframes hop{ from{ transform:translateY(1px); } to{ transform:translateY(-3px); } }
+
+.controls{
+  flex:none; display:flex; align-items:center; gap:8px; padding:8px 12px;
+  border-top:1px solid var(--line); background:var(--surface);
+}
+.play-btn{
+  display:inline-grid; place-items:center; width:48px; height:48px; flex:none;
+  border:0; border-radius:50%; background:var(--text); color:var(--bg); cursor:pointer; font-size:1.2rem;
+}
+.switch{
+  display:inline-flex; align-items:center; gap:8px; min-height:var(--touch); padding:0 10px;
+  border:0; border-radius:999px; background:transparent; cursor:pointer; font-size:.86rem; font-weight:600;
+}
+.switch:hover{ background:var(--raised); }
+.switch .track{ position:relative; width:34px; height:20px; border-radius:10px; background:var(--raised); box-shadow:inset 0 0 0 1px var(--line); transition:background .2s; }
+.switch .track::after{ content:""; position:absolute; top:3px; left:3px; width:14px; height:14px; border-radius:50%; background:var(--muted); transition:transform .2s, background .2s; }
+.switch[aria-pressed="true"] .track{ background:var(--turf); }
+.switch[aria-pressed="true"] .track::after{ transform:translateX(14px); background:#fff; }
+.controls .spacer{ flex:1; }
+
+/* 표시 설정 시트 */
+.sheet{ position:fixed; inset:0; z-index:60; display:flex; align-items:flex-end; justify-content:center; }
+.sheet-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.45); }
+.sheet-panel{
+  position:relative; width:100%; max-width:520px; max-height:85%; overflow:auto;
+  padding:18px 20px calc(20px + env(safe-area-inset-bottom,0px));
+  border-radius:16px 16px 0 0; background:var(--surface); box-shadow:var(--shadow);
+}
+.sheet-panel h2{ margin:0 0 4px; font-size:1.05rem; }
+.sheet-panel h3{ margin:18px 0 8px; font-size:.88rem; color:var(--muted); font-weight:600; }
+.seg{ display:flex; flex-wrap:wrap; gap:6px; }
+.seg button{
+  min-height:38px; padding:0 14px; border-radius:999px; border:1px solid var(--line);
+  background:transparent; cursor:pointer; font-size:.9rem;
+}
+.seg button[aria-pressed="true"]{ background:var(--text); color:var(--bg); border-color:transparent; font-weight:600; }
+.sheet-close{ position:absolute; top:8px; right:8px; }
+
+/* 이미지 뷰어 */
+.viewer{ position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.9); display:flex; flex-direction:column; }
+.viewer-bar{ display:flex; align-items:center; gap:8px; padding:8px; color:#fff; }
+.viewer-bar span{ flex:1; font-weight:600; }
+.viewer-img{ flex:1; min-height:0; overflow:auto; display:flex; align-items:center; justify-content:center; padding:8px; }
+.viewer-img img{ max-width:100%; max-height:100%; }
+
+/* 안내 배너 (업데이트·오프라인) */
+.banner{
+  position:fixed; left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom,0px)); z-index:80;
+  max-width:520px; margin:0 auto; display:flex; align-items:center; gap:10px;
+  padding:12px 14px; border-radius:14px; background:var(--surface); box-shadow:var(--shadow); font-size:.9rem;
+}
+.banner span{ flex:1; }
+body.song-mode .banner{ bottom:calc(76px + env(safe-area-inset-bottom,0px)); }
+
+@media (min-width: 900px){
+  .song-main{ display:grid; grid-template-columns:minmax(360px, 440px) 1fr; }
+  .media{ padding:16px 0 0 16px; overflow:auto; }
+  .video-frame{ max-height:none; }
+  .lyrics-scroll{ border-left:1px solid var(--line); }
+  .lyrics{ padding:0 24px; }
+}
+@media (max-width: 380px){
+  .switch .lbl{ font-size:.78rem; }
+  .switch{ padding:0 6px; gap:6px; }
+}
+@media (prefers-reduced-motion: reduce){
+  *{ transition:none !important; animation:none !important; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="banner" id="banner" role="status" hidden>
+  <span id="banner-msg"></span>
+  <button class="btn" id="banner-btn" hidden></button>
+  <button class="icon-btn" id="banner-x" aria-label="닫기">✕</button>
+</div>
+
+<script>
+/* ═════════════════════════════════════════════════════════════
+   ★ 1. 이벤트 정보 — 운영자가 고치는 곳
+   비워 둔 항목은 화면에서 자동으로 빠집니다.
+   ═════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  eventTitle: ["우마무스메", "라이브 콜 가이드"],   // 홈 큰 제목 (줄 단위)
+  eventKicker: "비공식 팬 제작 콜 가이드",
+  eventMeta: "",                                    // 예: "2026.11.21 (토) · ○○ 아레나"
+
+  /* 공연 일정 — 넣으면 홈에 카운트다운이 생깁니다 (KST 기준)
+     예) { start:"2026-11-21T17:00:00+09:00", end:"2026-11-21T20:00:00+09:00", label:"1일차" } */
+  shows: [],
+
+  /* 공연 당일 타임라인 — 그날이 되면 홈 위쪽에 나타납니다
+     예) "2026-11-21": [{ t:"15:00", label:"입장 시작" }, { t:"17:00", label:"공연 시작" }] */
+  timeline: {},
+
+  venue: { name:"", address:"", mapUrl:"" },        // 공연 정보 카드
+  links: [],                                        // 예) { label:"공식 사이트", url:"https://..." }
+
+  /* 공지 이미지 — images/notice/ 에 넣고 한 줄씩 등록. 파일이 없으면 조용히 빠집니다 */
+  notices: [],                                      // 예) { src:"./images/notice/01.jpg", title:"입장 안내" }
+
+  credit: "비공식 팬 제작 · 실제 현장 분위기에 따라 달라질 수 있어요"
+};
+
+/* ═════════════════════════════════════════════════════════════
+   ★ 2. 곡 목록 — 지금은 한 곡만 있습니다
+   cards 형식은 친구분 사이트(Ms. VICTORIA Live Call Guide)의
+   JSON 저장 형식과 똑같습니다:
+     { time, action, jp, kr, pron, call }
+       time   : 영상 기준 시작 초
+       action : 동작 (노랑)
+       jp     : 원문 가사
+       kr     : 번역
+       pron   : 독음
+       call   : 콜 (분홍)
+   어느 줄에든 [oi] [clap] [wave] [jump] [cheer] [sing] 을 적으면
+   그 자리에 아이콘이 들어갑니다.
+
+   가사 데이터 넣는 법 (셋 중 하나)
+     ① data/ms-victoria.json 파일로 저장 (친구분 사이트의 "💾 데이터 저장"
+        으로 받은 파일 그대로) → 모든 방문자에게 적용
+     ② 곡 목록 화면 아래 "JSON 파일 불러오기" → 이 기기에서만 적용
+     ③ 아래 cards 배열에 직접 입력
+   아래 기본 데이터에는 타이밍·동작·콜만 들어 있고 가사는 비어 있습니다.
+   ═════════════════════════════════════════════════════════════ */
+const SONGS = [
+  {
+    id: "ms-victoria",
+    title: "Ms. VICTORIA",
+    sub: "",                              // 부제·부르는 캐릭터 등 (선택)
+    youtubeId: "vsnyQd6Ur-M",
+    dataUrl: "./data/ms-victoria.json",
+    cards: [
+      { time:1.3 }, { time:12.7 },
+      { time:27.3, action:"손가락으로 1, 2, 3, 4 펼치기", call:"원 투 쓰리 포!" },
+      { time:29,   call:"어이 어이 어이 어이 어이" },
+      { time:38,   action:"연주음에 맞춰", call:"어이! 어이! 어이! 어이!" },
+      { time:42.4 }, { time:49.9 }, { time:56.8 }, { time:59.5 }, { time:61.7 },
+      { time:64.2 }, { time:66.6 }, { time:69 }, { time:71.6 }, { time:79.6 },
+      { time:81.5, action:"괄호 부분 따라 부르기 [sing]" },
+      { time:86.4, call:"빅토리!" },
+      { time:87.7 }, { time:91.3 }, { time:94.3 }, { time:97.5 }, { time:101.1 }, { time:104.2 },
+      { time:107.3, action:"연주에 맞춰 외치기", call:"어이! 어이!" },
+      { time:109.7, action:"연주에 맞춰 외치기", call:"어이!" },
+      { time:114 }, { time:116.2 },
+      { time:120.9, call:"어이 어이 어이 어이 어이" },
+      { time:128.4 }, { time:132.9 }, { time:137.9 }, { time:142.7 }, { time:145.1 },
+      { time:147.7, action:"따라 부르기 [sing]" },
+      { time:151.4, action:"따라 부르기 [sing]" },
+      { time:156.5 }, { time:161.2 }, { time:168.2 },
+      { time:171.2, action:"캐스트·해설 대사에 맞춰 환호 [cheer]" },
+      { time:189.2 }, { time:191.6 }, { time:194.2 }, { time:196.6 }, { time:199.1 }, { time:207.2 },
+      { time:208.9, action:"괄호 부분 따라 부르기 [sing]" },
+      { time:214,   call:"빅토리!" },
+      { time:215.1 }, { time:218.6 }, { time:221.7 }, { time:224.8 }, { time:228.5 }, { time:231.5 },
+      { time:234.6, action:"연주에 맞춰 외치기", call:"어이! 어이!" },
+      { time:237,   action:"연주에 맞춰 외치기", call:"어이!" },
+      { time:241.4 }, { time:243.1 }, { time:252.2 }, { time:264.2 }, { time:273.3 }
+    ]
+  }
+];
+
+/* 가사 넘김 조절값 */
+const SYNC_INTERVAL_MS   = 100;   // 재생 위치 확인 주기
+const LYRIC_LEAD_SEC     = 0.35;  // 실제보다 몇 초 먼저 다음 줄로 (따라 부르기 쉽게)
+const SCROLL_DURATION_MS = 260;   // 가사 스크롤 애니메이션 길이
+
+/* ═════════════════════════════════════════════════════════════
+   이 아래는 앱 동작 코드입니다
+   ═════════════════════════════════════════════════════════════ */
+const GATE_COLORS = [["#FFFFFF","#111"],["#1B1B1B","#fff"],["#D7262E","#fff"],["#1F5FBF","#fff"],
+                     ["#F2CC1F","#111"],["#2E8B3E","#fff"],["#F08A1C","#111"],["#F27FB0","#111"]];
+const ICONS = {
+  shout:'<path d="M3 10v4h3l6 4V6l-6 4H3z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/><path d="M18.5 7a7 7 0 0 1 0 10"/>',
+  sing:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/>',
+  hand:'<path d="M7 12V7.5a1.5 1.5 0 0 1 3 0V11"/><path d="M10 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M13 11V6.5a1.5 1.5 0 0 1 3 0V13"/><path d="M16 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L4.3 14a1.5 1.5 0 0 1 2.4-1.8L7 12.5"/>',
+  clap:'<path d="M8 20l-3.5-5.5a1.4 1.4 0 0 1 2.3-1.6L8 14.5V7a1.4 1.4 0 0 1 2.8 0v5"/><path d="M10.8 12V5.5a1.4 1.4 0 0 1 2.8 0V13"/><path d="M17.5 3.5l1-1.5M20 7l1.8-.6M20.5 11H22"/>',
+  cheer:'<path d="M12 3l2.1 5.4L20 9.5l-4.5 3.8L17 19l-5-3-5 3 1.5-5.7L4 9.5l5.9-1.1z"/>',
+  jump:'<path d="M12 18V5"/><path d="M6.5 10.5L12 5l5.5 5.5"/><path d="M5 21h14"/>'
+};
+const TOKEN_MAP = { oi:"shout", sing:"sing", wave:"hand", clap:"clap", cheer:"cheer", jump:"jump" };
+const CUE_LABEL = { shout:"외치기", sing:"따라 부르기", hand:"손 동작", clap:"박수", cheer:"환호", jump:"점프" };
+const svg = (k, cls="") => `<svg class="i i-${k} ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]||""}</svg>`;
+const CHEV_R = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+const CHEV_D = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+const PLAY = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor;stroke:none"><path d="M8 5.5v13l11-6.5z"/></svg>';
+const PAUSE = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor;stroke:none"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>';
+const SLIDERS = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>';
+const MOON = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+
+const app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2, "0");
+const fmtTime = s => { s = Math.max(0, s||0); return `${Math.floor(s/60)}:${pad(Math.floor(s%60))}`; };
+
+/* ── 저장소 (이 기기에만) ── */
+function store(key, val){
+  try{
+    if (val === undefined) return localStorage.getItem("uma-guide:" + key);
+    if (val === null || val === "") localStorage.removeItem("uma-guide:" + key);
+    else localStorage.setItem("uma-guide:" + key, val);
+  }catch(e){ return null; }
+}
+
+/* ── 데이터 정리: 친구분 형식 그대로 + Vaundy 형식(ko/tr)도 받아 줌 ── */
+function clean(v){
+  if (Array.isArray(v)) v = v.map(x => typeof x === "string" ? x : (x && x.text) || "").join("");
+  v = String(v ?? "");
+  return v.trim() ? v.replace(/^[ \t\u3000]+|\s+$/g, "") : "";
+}
+function normalizeCards(arr){
+  if (!Array.isArray(arr)) throw new Error("배열 형식이 아니에요");
+  const out = arr.map(c => ({
+    time: Number(c.time) || 0,
+    action: clean(c.action),
+    jp: clean(c.jp),
+    kr: clean(c.kr ?? c.tr),
+    pron: clean(c.pron ?? c.ko),
+    call: clean(c.call ?? c.bg)
+  })).sort((a,b) => a.time - b.time);
+  if (!out.length) throw new Error("줄이 하나도 없어요");
+  return out;
+}
+const songState = {};   // id → { cards, source }
+async function loadSong(song){
+  if (songState[song.id]) return songState[song.id];
+  const saved = store("data:" + song.id);
+  if (saved){
+    try{ return songState[song.id] = { cards: normalizeCards(JSON.parse(saved)), source:"device" }; }
+    catch(e){ store("data:" + song.id, null); }
+  }
+  if (song.dataUrl && location.protocol !== "file:"){
+    try{
+      const res = await fetch(song.dataUrl, { cache:"no-cache" });
+      if (res.ok) return songState[song.id] = { cards: normalizeCards(await res.json()), source:"file" };
+    }catch(e){ /* 파일이 없으면 기본 데이터 */ }
+  }
+  return songState[song.id] = { cards: normalizeCards(song.cards), source:"builtin" };
+}
+function cuesOf(c){
+  const s = `${c.action} ${c.call}`;
+  const set = new Set();
+  if (/어이|오이|빅토리|외치|구호|\[oi\]/i.test(s) || (c.call && !/\[(sing|cheer|clap|wave|jump)\]/.test(c.call))) set.add("shout");
+  if (/박수|\[clap\]/.test(s)) set.add("clap");
+  if (/흔들|손가락|손을|펼치|\[wave\]/.test(s)) set.add("hand");
+  if (/환호|\[cheer\]/.test(s)) set.add("cheer");
+  if (/점프|\[jump\]/.test(s)) set.add("jump");
+  if (/따라 ?부르|떼창|\[sing\]/.test(s)) set.add("sing");
+  return [...set];
+}
+const fmtText = t => esc(t).replace(/\[(oi|sing|wave|clap|cheer|jump)\]/g, (m,k) => svg(TOKEN_MAP[k]));
+function songStats(cards){
+  const calls = cards.filter(c => c.call).length;
+  const cues = new Set(); cards.forEach(c => cuesOf(c).forEach(k => cues.add(k)));
+  const hasLyrics = cards.some(c => c.jp || c.pron || c.kr);
+  return { calls, cues:[...cues], hasLyrics };
+}
+function gateHtml(i, cls=""){
+  const [bg, fg] = GATE_COLORS[i % 8];
+  return `<span class="gate ${cls}" style="--g-bg:${bg};--g-fg:${fg}" aria-hidden="true">${i+1}</span>`;
+}
+
+/* ── 테마 · 표시 설정 ── */
+const prefs = {
+  theme: store("theme") || "system",
+  hide: new Set(JSON.parse(store("hide") || "[]")),
+  scale: store("scale") || "1",
+  compact: store("compact") === "1",
+  autoscroll: store("autoscroll") !== "0"
+};
+function applyPrefs(){
+  const root = document.documentElement;
+  if (prefs.theme === "system") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", prefs.theme);
+  ["action","jp","pron","kr","call"].forEach(k => document.body.classList.toggle("hide-" + k, prefs.hide.has(k)));
+  root.style.setProperty("--lyric-scale", prefs.scale);
+  document.body.classList.toggle("compact", prefs.compact);
+  const dark = prefs.theme === "dark" || (prefs.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", dark ? "#121A17" : "#F2F4EE");
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", applyPrefs);
+
+/* ═══════════════════════ 라우터 ═══════════════════════ */
+function router(){
+  leaveSong();
+  const hash = location.hash.replace(/^#\/?/, "");
+  if (hash.startsWith("song/")){
+    let id = hash.slice(5); try{ id = decodeURIComponent(id); }catch(e){}
+    const song = SONGS.find(s => s.id === id);
+    if (song) return renderSong(song);
+  }
+  if (hash === "guide") return renderGuide();
+  renderHome();
+}
+window.addEventListener("hashchange", router);
+
+/* ═══════════════════════ 홈 ═══════════════════════ */
+let cdTimer = null;
+function renderHome(){
+  document.title = CONFIG.eventTitle.join(" ");
+  const v = CONFIG.venue || {};
+  const hasInfo = v.name || v.address || (CONFIG.links && CONFIG.links.length);
+  const s0 = SONGS[0];
+  app.innerHTML = `
+    <div class="home-head"><button class="icon-btn" id="theme-btn" aria-label="화면 밝기 바꾸기" title="화면 밝기 바꾸기">${MOON}</button></div>
+    <main class="page">
+      <header class="hero">
+        <p class="hero-kicker">${esc(CONFIG.eventKicker)}</p>
+        <h1 class="hero-title">${CONFIG.eventTitle.map(t => `<span>${esc(t)}</span>`).join("")}</h1>
+        ${CONFIG.eventMeta ? `<p class="hero-meta">${esc(CONFIG.eventMeta)}</p>` : ""}
+      </header>
+      <div class="rail" aria-hidden="true"></div>
+
+      <section class="countdown" id="countdown" hidden aria-live="polite">
+        <span class="cd-dday" id="cd-dday"></span><span class="cd-clock" id="cd-clock"></span>
+        <span class="cd-label" id="cd-label"></span>
+      </section>
+      <section class="today" id="today" hidden><h2>오늘 일정</h2><ol id="today-list"></ol></section>
+
+      <a class="go-guide" href="#/guide">
+        ${gateHtml(0)}
+        <span><b>콜 가이드</b><small>${SONGS.length === 1 ? esc(s0.title) + " 한 곡" : SONGS.length + "곡"} · 영상에 맞춰 콜·동작 확인</small></span>
+        <span class="chev">${CHEV_R}</span>
+      </a>
+
+      ${hasInfo ? acc("info", "공연 정보", `
+        ${v.name ? `<h3>장소</h3><p>${esc(v.name)}</p>` : ""}
+        ${v.address ? `<p class="note">${esc(v.address)}</p>` : ""}
+        <div class="chips">
+          ${v.mapUrl ? `<a class="chip" href="${esc(v.mapUrl)}" target="_blank" rel="noopener">지도 열기</a>` : ""}
+          ${v.address ? `<button class="chip" id="copy-addr" type="button">주소 복사</button>` : ""}
+          ${(CONFIG.links||[]).map(l => `<a class="chip" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("")}
+        </div>`) : ""}
+
+      ${acc("manner", "처음이라면 · 콜 매너", `
+        <h3>콜은 이렇게</h3>
+        <ul>
+          <li>분홍색 줄이 관객이 함께 외치는 콜이에요. 나머지 가사는 노래를 들어 주세요.</li>
+          <li>노란색 줄은 동작이에요. 손가락으로 숫자를 펼치거나, 연주에 맞춰 외치는 타이밍을 알려 줘요.</li>
+          <li>"어이!"는 길게 끌지 말고 리듬에 맞춰 짧게 끊어요.</li>
+          <li>헷갈리면 박수만 쳐도 충분해요. 다 외우지 않아도 괜찮아요.</li>
+        </ul>
+        <h3>함께 지켜요</h3>
+        <ul>
+          <li>펜라이트는 어깨 높이 정도로, 뒷사람 시야를 가리지 않게 들어 주세요.</li>
+          <li>캐스트 MC와 대사 중에는 조용히 듣고, 환호 구간에서만 크게 반응해요.</li>
+          <li>촬영·녹음은 공연 측 안내를 따라 주세요.</li>
+        </ul>
+        <p class="note">이 가이드는 공식 응원법이 아니라 팬이 정리한 것이에요. 현장 분위기에 따라 달라질 수 있어요.</p>`)}
+
+      ${CONFIG.notices && CONFIG.notices.length ? acc("notice", "공지 · 안내", `<div class="notice-grid" id="notice-grid"></div>`) : ""}
+
+      <p class="credits">${esc(CONFIG.credit)}</p>
+    </main>`;
+  setupAccordions();
+  document.getElementById("theme-btn").addEventListener("click", cycleTheme);
+  const ca = document.getElementById("copy-addr");
+  if (ca) ca.addEventListener("click", async () => {
+    try{ await navigator.clipboard.writeText(v.address); ca.textContent = "복사했어요"; }catch(e){ ca.textContent = "복사하지 못했어요"; }
+  });
+  setupNotices();
+  startCountdown();
+  updateToday();
+}
+function acc(id, label, body){
+  return `<section class="acc">
+    <button class="acc-btn" type="button" aria-expanded="false" aria-controls="acc-${id}">${esc(label)}<span class="chev">${CHEV_D}</span></button>
+    <div class="acc-panel" id="acc-${id}" hidden>${body}</div>
+  </section>`;
+}
+function setupAccordions(){
+  app.querySelectorAll(".acc-btn").forEach(b => b.addEventListener("click", () => {
+    const open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", String(!open));
+    document.getElementById(b.getAttribute("aria-controls")).hidden = open;
+  }));
+}
+function cycleTheme(){
+  const dark = prefs.theme === "dark" || (prefs.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  prefs.theme = dark ? "light" : "dark";
+  store("theme", prefs.theme); applyPrefs();
+}
+
+/* 카운트다운 — CONFIG.shows 순서대로 따라감 */
+function startCountdown(){
+  clearInterval(cdTimer);
+  const shows = (CONFIG.shows||[]).map(s => ({...s, a:new Date(s.start).getTime(), b:new Date(s.end).getTime()}))
+                                  .filter(s => !isNaN(s.a)).sort((x,y) => x.a - y.a);
+  const box = document.getElementById("countdown");
+  if (!box || !shows.length) return;
+  box.hidden = false;
+  const tick = () => {
+    const now = Date.now();
+    const live = shows.find(s => now >= s.a && now < s.b);
+    const next = shows.find(s => s.a > now);
+    const dd = document.getElementById("cd-dday"), cl = document.getElementById("cd-clock"), lb = document.getElementById("cd-label");
+    if (!dd){ clearInterval(cdTimer); return; }
+    if (live){ dd.textContent = "공연 중"; cl.textContent = ""; lb.textContent = live.label || ""; return; }
+    if (!next){ dd.textContent = "공연 종료"; cl.textContent = ""; lb.textContent = "함께해 주셔서 고마워요"; clearInterval(cdTimer); return; }
+    const diff = next.a - now, d = Math.floor(diff/864e5);
+    const h = Math.floor(diff/36e5)%24, m = Math.floor(diff/6e4)%60, s = Math.floor(diff/1e3)%60;
+    dd.textContent = d > 0 ? `D-${d}` : "D-DAY";
+    cl.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+    lb.textContent = `${next.label ? next.label + " 공연까지" : "다음 공연까지"}`;
+  };
+  tick(); cdTimer = setInterval(tick, 1000);
+}
+function kstKey(d = new Date()){
+  const k = new Date(d.getTime() + 9*36e5);
+  return `${k.getUTCFullYear()}-${pad(k.getUTCMonth()+1)}-${pad(k.getUTCDate())}`;
+}
+function updateToday(){
+  const steps = (CONFIG.timeline||{})[kstKey()];
+  const card = document.getElementById("today");
+  if (!card || !steps || !steps.length) return;
+  const k = new Date(Date.now() + 9*36e5), nowMin = k.getUTCHours()*60 + k.getUTCMinutes();
+  const mins = steps.map(s => { const [h,m] = s.t.split(":").map(Number); return h*60+m; });
+  let cur = -1; mins.forEach((m,i) => { if (nowMin >= m) cur = i; });
+  document.getElementById("today-list").innerHTML = steps.map((s,i) =>
+    `<li class="${i < cur ? "past" : i === cur ? "now" : ""}"><time>${esc(s.t)}</time><span>${esc(s.label)}</span></li>`).join("");
+  card.hidden = false;
+}
+
+/* 공지 이미지 */
+function setupNotices(){
+  const grid = document.getElementById("notice-grid");
+  if (!grid) return;
+  CONFIG.notices.forEach((n, i) => {
+    const img = new Image();
+    img.onload = () => {
+      const b = document.createElement("button");
+      b.type = "button"; b.style.order = i;
+      b.innerHTML = `<img src="${esc(n.src)}" alt=""><span>${esc(n.title)}</span>`;
+      b.addEventListener("click", () => openViewer(n, b));
+      grid.appendChild(b);
+    };
+    img.src = n.src;
+  });
+}
+function openViewer(n, trigger){
+  const v = document.createElement("div");
+  v.className = "viewer"; v.setAttribute("role","dialog"); v.setAttribute("aria-label", n.title);
+  v.innerHTML = `<div class="viewer-bar"><span>${esc(n.title)}</span><button class="icon-btn" aria-label="닫기">✕</button></div>
+                 <div class="viewer-img"><img src="${esc(n.src)}" alt="${esc(n.title)}"></div>`;
+  const close = () => { v.remove(); trigger.focus(); document.removeEventListener("keydown", onKey); };
+  const onKey = e => { if (e.key === "Escape") close(); };
+  v.querySelector("button").addEventListener("click", close);
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(v); v.querySelector("button").focus();
+}
+
+/* ═══════════════════════ 곡 목록 ═══════════════════════ */
+async function renderGuide(){
+  document.title = "콜 가이드 · " + CONFIG.eventTitle.join(" ");
+  app.innerHTML = `
+    <div class="topbar"><a class="icon-btn" href="#/" aria-label="홈으로" title="홈으로">←</a><h1>콜 가이드</h1></div>
+    <main class="page">
+      <div class="guide-head">
+        <h2>곡 목록</h2>
+        <p>곡을 고르면 영상에 맞춰 가사와 콜, 동작 타이밍을 볼 수 있어요.</p>
+      </div>
+      <div class="legend">
+        <span class="c-call">${svg("shout")}콜</span>
+        <span class="c-call">${svg("sing")}따라 부르기</span>
+        <span class="c-act">${svg("hand")}손 동작</span>
+        <span class="c-act">${svg("cheer")}환호</span>
+        <span class="c-act">${svg("clap")}박수</span>
+      </div>
+      <ul class="song-list" id="song-list"></ul>
+      <section class="data-tools" id="data-tools"></section>
+      <p class="credits">${esc(CONFIG.credit)}</p>
+    </main>`;
+  const list = document.getElementById("song-list");
+  for (const [i, s] of SONGS.entries()){
+    const st = await loadSong(s);
+    const stats = songStats(st.cards);
+    const li = document.createElement("li");
+    li.innerHTML = `<a class="song-row" href="#/song/${encodeURIComponent(s.id)}">
+        ${gateHtml(i)}
+        <span><span class="t">${esc(s.title)}</span>
+          <span class="m">${s.sub ? `<span>${esc(s.sub)}</span>` : ""}
+            <span class="c-call">콜 ${stats.calls}줄</span>
+            <span>${stats.cues.map(k => `<span class="cue-${k}" title="${CUE_LABEL[k]}">${svg(k)}</span>`).join(" ")}</span>
+          </span></span>
+        <span class="chev">${CHEV_R}</span></a>`;
+    list.appendChild(li);
+  }
+  paintDataTools();
+}
+function paintDataTools(){
+  const box = document.getElementById("data-tools");
+  if (!box) return;
+  const s = SONGS[0], st = songState[s.id];
+  const label = { builtin:"기본 데이터 (타이밍·동작·콜, 가사 없음)", file:"data 폴더의 가사 파일", device:"이 기기에 불러온 파일" }[st.source];
+  box.innerHTML = `
+    <h3>가사 데이터</h3>
+    <p>지금 쓰는 데이터: <span class="src">${label}</span></p>
+    <p>친구분 사이트에서 "데이터 저장(JSON)"으로 받은 파일을 그대로 불러올 수 있어요. 불러온 파일은 이 기기에만 저장돼요.</p>
+    <div class="chips">
+      <button class="btn primary" id="imp-btn" type="button">JSON 파일 불러오기</button>
+      <button class="btn" id="exp-btn" type="button">지금 데이터 저장</button>
+      ${st.source === "device" ? `<button class="btn" id="reset-btn" type="button">불러온 파일 지우기</button>` : ""}
+    </div>
+    <p id="imp-msg" class="note" role="status" style="margin-top:10px"></p>
+    <input type="file" id="imp-file" accept=".json,application/json" hidden>`;
+  const file = document.getElementById("imp-file"), msg = document.getElementById("imp-msg");
+  document.getElementById("imp-btn").addEventListener("click", () => file.click());
+  file.addEventListener("change", () => {
+    const f = file.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try{
+        const raw = JSON.parse(r.result);
+        const cards = normalizeCards(Array.isArray(raw) ? raw : raw.cards || raw.lyrics);
+        store("data:" + s.id, JSON.stringify(cards));
+        songState[s.id] = { cards, source:"device" };
+        renderGuide();
+      }catch(e){ msg.textContent = "불러오지 못했어요: " + e.message + ". 줄 목록이 담긴 JSON 파일인지 확인해 주세요."; }
+    };
+    r.readAsText(f);
+  });
+  document.getElementById("exp-btn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(st.cards, null, 2)], { type:"application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = s.id + ".json"; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  const rb = document.getElementById("reset-btn");
+  if (rb) rb.addEventListener("click", () => { store("data:" + s.id, null); delete songState[s.id]; renderGuide(); });
+}
+
+/* ═══════════════════════ 곡 화면 ═══════════════════════ */
+let cur = null;          // { song, cards, idx }
+let syncTimer = null, lastActive = -1, scrollRaf = null, userScrollUntil = 0, wakeLock = null;
+
+/* 재생 시계 — 유튜브가 되면 유튜브 시간, 안 되면 내부 타이머로 대신 */
+const clock = {
+  mode:"none", player:null, ready:false, base:0, startedAt:0, running:false, duration:0,
+  now(){
+    if (this.mode === "yt"){ try{ return this.player.getCurrentTime() || 0; }catch(e){ return 0; } }
+    return this.running ? this.base + (performance.now() - this.startedAt)/1000 : this.base;
+  },
+  playing(){
+    if (this.mode === "yt"){ try{ const s = this.player.getPlayerState(); return s === 1 || s === 3; }catch(e){ return false; } }
+    return this.running;
+  },
+  play(){
+    if (this.mode === "yt"){ try{ this.player.playVideo(); }catch(e){} return; }
+    if (!this.running){ this.startedAt = performance.now(); this.running = true; }
+    onPlayState();
+  },
+  pause(){
+    if (this.mode === "yt"){ try{ this.player.pauseVideo(); }catch(e){} return; }
+    if (this.running){ this.base = this.now(); this.running = false; }
+    onPlayState();
+  },
+  seek(t){
+    t = Math.max(0, t);
+    if (this.mode === "yt"){ try{ this.player.seekTo(t, true); this.player.playVideo(); }catch(e){} return; }
+    this.base = t; this.startedAt = performance.now(); this.running = true; onPlayState();
+  },
+  dur(){
+    if (this.mode === "yt"){ try{ const d = this.player.getDuration(); if (d > 0) return d; }catch(e){} }
+    const last = cur && cur.cards.length ? cur.cards[cur.cards.length-1].time : 0;
+    return Math.max(last + 10, 30);
+  }
+};
+
+async function renderSong(song){
+  document.body.classList.add("song-mode");
+  document.title = song.title + " · 콜 가이드";
+  const st = await loadSong(song);
+  const idx = SONGS.indexOf(song);
+  cur = { song, cards: st.cards, idx };
+  lastActive = -1;
+  app.innerHTML = `
+    <div class="song-page">
+      <div class="topbar">
+        <a class="icon-btn" href="#/guide" aria-label="곡 목록으로" title="곡 목록으로">←</a>
+        <div class="song-title-wrap">${gateHtml(idx)}<h1>${esc(song.title)}</h1></div>
+        <button class="icon-btn" id="view-btn" aria-label="표시 설정" title="표시 설정" aria-haspopup="dialog">${SLIDERS}</button>
+      </div>
+      <div class="song-main">
+        <div class="media">
+          <div class="video-frame" id="video-frame"><div id="yt-player"></div></div>
+          <div class="course">
+            <div class="course-track" id="course" role="slider" tabindex="0" aria-label="곡 위치" aria-valuemin="0" aria-valuenow="0">
+              <div class="course-rail"></div><div class="course-fill" id="course-fill"></div>
+              <div id="ticks"></div>
+              ${gateHtml(idx, "runner").replace('class="gate', 'id="runner" class="gate')}
+            </div>
+            <div class="course-meta"><span>출발</span><span class="num" id="time-read">0:00 / 0:00</span><span>골</span></div>
+          </div>
+          <p class="status" id="status" aria-live="polite">영상을 불러오는 중이에요</p>
+        </div>
+        <div class="lyrics-scroll" id="lyrics-scroll">
+          <ol class="lyrics" id="lyrics"></ol>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="play-btn" id="play-btn" aria-label="재생">${PLAY}</button>
+        <button class="switch" id="compact-btn" aria-pressed="${prefs.compact}"><span class="lbl">단축모드</span><span class="track"></span></button>
+        <button class="switch" id="auto-btn" aria-pressed="${prefs.autoscroll}"><span class="lbl">자동 스크롤</span><span class="track"></span></button>
+      </div>
+    </div>`;
+  paintLyrics();
+  paintTicks();
+  bindSongControls();
+  setupPlayer(song);
+  syncTimer = setInterval(sync, SYNC_INTERVAL_MS);
+}
+
+function paintLyrics(){
+  const ol = document.getElementById("lyrics");
+  let n = 0;
+  ol.innerHTML = cur.cards.map((c, i) => {
+    const cues = cuesOf(c);
+    const empty = !(c.action || c.jp || c.pron || c.kr || c.call);
+    if (empty) n++;
+    return `<li><button class="line${c.call ? " has-call" : ""}" data-i="${i}" data-time="${c.time}" type="button">
+      <span class="line-gutter"><span class="line-time">${fmtTime(c.time)}</span>
+        <span class="cues">${cues.map(k => `<span class="cue-${k}" title="${CUE_LABEL[k]}">${svg(k)}</span>`).join("")}</span></span>
+      <span class="line-body">
+        <span class="r r-action">${fmtText(c.action)}</span>
+        <span class="r r-jp" lang="ja">${fmtText(c.jp)}</span>
+        <span class="r r-pron">${fmtText(c.pron)}</span>
+        <span class="r r-kr">${fmtText(c.kr)}</span>
+        <span class="r r-call">${fmtText(c.call)}</span>
+        ${empty ? `<span class="r r-empty">♪ 가사</span>` : ""}
+      </span></button></li>`;
+  }).join("");
+  requestAnimationFrame(updateLyricsPadding);
+}
+function paintTicks(){
+  const d = clock.dur();
+  document.getElementById("ticks").innerHTML = cur.cards.map(c => {
+    const cls = c.call ? "call" : c.action ? "act" : "";
+    return cls ? `<span class="tick ${cls}" style="left:${(c.time/d*100).toFixed(2)}%"></span>` : "";
+  }).join("");
+}
+function updateLyricsPadding(){
+  const box = document.getElementById("lyrics-scroll"), ol = document.getElementById("lyrics");
+  if (!box || !ol) return;
+  const h = box.clientHeight, first = ol.querySelector(".line");
+  ol.style.paddingTop = Math.max(12, h/2 - (first ? first.offsetHeight/2 : 0)) + "px";
+  ol.style.paddingBottom = Math.max(120, h/2) + "px";
+}
+
+function bindSongControls(){
+  const ol = document.getElementById("lyrics");
+  ol.addEventListener("click", e => {
+    const b = e.target.closest(".line"); if (!b) return;
+    userScrollUntil = 0;
+    clock.seek(Number(b.dataset.time));
+    sync(true);
+  });
+  const box = document.getElementById("lyrics-scroll");
+  ["wheel","touchstart"].forEach(ev => box.addEventListener(ev, () => { userScrollUntil = performance.now() + 4000; }, { passive:true }));
+
+  document.getElementById("play-btn").addEventListener("click", () => clock.playing() ? clock.pause() : clock.play());
+  document.getElementById("compact-btn").addEventListener("click", e => {
+    prefs.compact = !prefs.compact; store("compact", prefs.compact ? "1" : "");
+    e.currentTarget.setAttribute("aria-pressed", prefs.compact); applyPrefs();
+    requestAnimationFrame(() => { updateLyricsPadding(); sync(true); });
+  });
+  document.getElementById("auto-btn").addEventListener("click", e => {
+    prefs.autoscroll = !prefs.autoscroll; store("autoscroll", prefs.autoscroll ? "" : "0");
+    e.currentTarget.setAttribute("aria-pressed", prefs.autoscroll);
+    if (prefs.autoscroll){ userScrollUntil = 0; sync(true); }
+  });
+  document.getElementById("view-btn").addEventListener("click", e => openViewSheet(e.currentTarget));
+
+  const course = document.getElementById("course");
+  const seekFrom = x => { const r = course.getBoundingClientRect(); clock.seek(Math.min(1, Math.max(0, (x - r.left)/r.width)) * clock.dur()); sync(true); };
+  course.addEventListener("pointerdown", e => { seekFrom(e.clientX); });
+  course.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft"){ clock.seek(clock.now() - 5); e.preventDefault(); }
+    if (e.key === "ArrowRight"){ clock.seek(clock.now() + 5); e.preventDefault(); }
+  });
+  document.addEventListener("keydown", songKeys);
+  window.addEventListener("resize", onResize);
+}
+function songKeys(e){
+  if (!cur || document.querySelector(".sheet")) return;
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea") return;
+  if (e.key === " " && tag !== "button"){ e.preventDefault(); clock.playing() ? clock.pause() : clock.play(); }
+}
+let lastW = innerWidth, lastH = innerHeight;
+function onResize(){
+  if (innerWidth === lastW && Math.abs(innerHeight - lastH) < 100) return;
+  lastW = innerWidth; lastH = innerHeight; updateLyricsPadding(); sync(true);
+}
+
+function sync(force){
+  if (!cur) return;
+  const t = clock.now(), d = clock.dur();
+  const look = t + LYRIC_LEAD_SEC;
+  let a = -1;
+  for (let i = 0; i < cur.cards.length; i++){ if (look >= cur.cards[i].time) a = i; else break; }
+  const pct = Math.min(100, t/d*100);
+  const fill = document.getElementById("course-fill"), runner = document.getElementById("runner");
+  if (!fill) return;
+  fill.style.width = pct + "%"; runner.style.left = pct + "%";
+  document.getElementById("course").setAttribute("aria-valuenow", Math.round(t));
+  document.getElementById("time-read").textContent = `${fmtTime(t)} / ${fmtTime(d)}`;
+  if (clock.mode === "timer" && clock.running && t > d){ clock.pause(); clock.base = 0; }
+  if (a === lastActive && !force) return;
+  const lines = document.querySelectorAll("#lyrics .line");
+  if (lines[lastActive]) lines[lastActive].classList.remove("active");
+  if (lines[a]) lines[a].classList.add("active");
+  lastActive = a;
+  if (a >= 0 && prefs.autoscroll && performance.now() > userScrollUntil) scrollToLine(lines[a]);
+}
+function scrollToLine(el){
+  const box = document.getElementById("lyrics-scroll"); if (!box || !el) return;
+  const delta = (el.getBoundingClientRect().top - box.getBoundingClientRect().top) - (box.clientHeight/2 - el.offsetHeight/2);
+  const to = Math.max(0, Math.min(box.scrollHeight - box.clientHeight, box.scrollTop + delta));
+  if (Math.abs(to - box.scrollTop) < 4) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches){ box.scrollTop = to; return; }
+  cancelAnimationFrame(scrollRaf);
+  const from = box.scrollTop, start = performance.now();
+  const step = now => {
+    const p = Math.min(1, (now - start)/SCROLL_DURATION_MS);
+    box.scrollTop = from + (to - from) * (1 - Math.pow(1 - p, 3));
+    if (p < 1) scrollRaf = requestAnimationFrame(step);
+  };
+  scrollRaf = requestAnimationFrame(step);
+}
+
+/* 유튜브 플레이어 — 실패하면 타이머 모드 */
+let ytApiState = "idle";   // idle | loading | ready | failed
+function setupPlayer(song){
+  clock.mode = "none"; clock.base = 0; clock.running = false;
+  const status = document.getElementById("status");
+  const fallback = (why) => {
+    if (!cur || cur.song !== song || clock.mode === "yt") return;
+    clock.mode = "timer";
+    const frame = document.getElementById("video-frame");
+    frame.innerHTML = `<div class="video-fallback"><b>영상을 불러오지 못했어요</b>
+      <span>재생 버튼을 누르면 가사가 타이머로 넘어가요.</span>
+      <a href="https://www.youtube.com/watch?v=${esc(song.youtubeId)}" target="_blank" rel="noopener">유튜브에서 열기</a></div>`;
+    status.textContent = why || "영상 없이 타이머로 진행해요. 가사를 탭하면 그 위치부터 시작해요.";
+    onPlayState();
+  };
+  if (!navigator.onLine){ fallback("오프라인이에요. 가사를 탭하거나 재생을 누르면 타이머로 진행해요."); return; }
+  const create = () => {
+    if (!cur || cur.song !== song) return;
+    try{
+      clock.player = new YT.Player("yt-player", {
+        videoId: song.youtubeId,
+        playerVars: { playsinline:1, rel:0, modestbranding:1 },
+        events: {
+          onReady: () => {
+            if (!cur || cur.song !== song) return;
+            clock.mode = "yt"; status.textContent = "재생을 누르거나 가사를 탭해 보세요.";
+            paintTicks(); sync(true);
+          },
+          onStateChange: () => onPlayState(),
+          onError: () => fallback()
+        }
+      });
+    }catch(e){ fallback(); }
+  };
+  if (ytApiState === "ready") create();
+  else{
+    window.onYouTubeIframeAPIReady = () => { ytApiState = "ready"; create(); };
+    if (ytApiState !== "loading"){
+      ytApiState = "loading";
+      const s = document.createElement("script");
+      s.src = "https://www.youtube.com/iframe_api";
+      s.onerror = () => { ytApiState = "failed"; fallback(); };
+      document.head.appendChild(s);
+    }
+  }
+  setTimeout(() => { if (clock.mode !== "yt") fallback(); }, 7000);
+}
+function onPlayState(){
+  const b = document.getElementById("play-btn"); if (!b) return;
+  const p = clock.playing();
+  b.innerHTML = p ? PAUSE : PLAY; b.setAttribute("aria-label", p ? "일시정지" : "재생");
+  document.getElementById("lyrics").classList.toggle("playing", p || lastActive >= 0);
+  if (p) requestWake(); else releaseWake();
+  if (p && clock.mode === "yt") document.getElementById("status").textContent = "";
+}
+async function requestWake(){ try{ if ("wakeLock" in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request("screen"); }catch(e){} }
+function releaseWake(){ try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && cur && clock.playing()) requestWake(); });
+
+function leaveSong(){
+  clearInterval(syncTimer); clearInterval(cdTimer); cancelAnimationFrame(scrollRaf);
+  if (clock.player){ try{ clock.player.destroy(); }catch(e){} clock.player = null; }
+  if (clock.mode === "timer") clock.pause();
+  clock.mode = "none"; clock.running = false;
+  document.removeEventListener("keydown", songKeys);
+  window.removeEventListener("resize", onResize);
+  releaseWake();
+  document.querySelector(".sheet")?.remove();
+  document.body.classList.remove("song-mode");
+  cur = null;
+}
+
+/* 표시 설정 시트 */
+function openViewSheet(trigger){
+  const sh = document.createElement("div");
+  sh.className = "sheet";
+  const rows = [["action","동작"],["jp","원문"],["pron","독음"],["kr","번역"],["call","콜"]];
+  const themeNow = prefs.theme;
+  sh.innerHTML = `<div class="sheet-backdrop" data-x></div>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-h">
+      <button class="icon-btn sheet-close" data-x aria-label="닫기">✕</button>
+      <h2 id="sheet-h">표시 설정</h2>
+      <h3>보여 줄 줄</h3>
+      <div class="seg" id="seg-rows">${rows.map(([k,l]) => `<button type="button" data-k="${k}" aria-pressed="${!prefs.hide.has(k)}">${l}</button>`).join("")}</div>
+      <h3>글자 크기</h3>
+      <div class="seg" id="seg-scale">${[["0.9","작게"],["1","보통"],["1.2","크게"],["1.4","아주 크게"]].map(([v,l]) => `<button type="button" data-v="${v}" aria-pressed="${prefs.scale === v}">${l}</button>`).join("")}</div>
+      <h3>화면 밝기</h3>
+      <div class="seg" id="seg-theme">${[["system","기기 설정"],["light","밝게"],["dark","어둡게"]].map(([v,l]) => `<button type="button" data-v="${v}" aria-pressed="${themeNow === v}">${l}</button>`).join("")}</div>
+    </div>`;
+  const close = () => { sh.remove(); document.removeEventListener("keydown", onKey); trigger.focus(); };
+  const onKey = e => { if (e.key === "Escape") close(); };
+  sh.querySelectorAll("[data-x]").forEach(x => x.addEventListener("click", close));
+  sh.querySelector("#seg-rows").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const k = b.dataset.k; prefs.hide.has(k) ? prefs.hide.delete(k) : prefs.hide.add(k);
+    b.setAttribute("aria-pressed", !prefs.hide.has(k));
+    store("hide", JSON.stringify([...prefs.hide])); applyPrefs(); updateLyricsPadding();
+  });
+  const single = (id, key) => sh.querySelector(id).addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    prefs[key] = b.dataset.v; store(key, b.dataset.v);
+    sh.querySelectorAll(id + " button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    applyPrefs(); updateLyricsPadding(); sync(true);
+  });
+  single("#seg-scale", "scale"); single("#seg-theme", "theme");
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(sh);
+  sh.querySelector(".sheet-close").focus();
+}
+
+/* ═══════════════════════ 배너 · 오프라인 · 서비스워커 ═══════════════════════ */
+function showBanner(msg, btnLabel, onBtn){
+  const b = document.getElementById("banner"), btn = document.getElementById("banner-btn");
+  document.getElementById("banner-msg").textContent = msg;
+  btn.hidden = !btnLabel; btn.textContent = btnLabel || ""; btn.onclick = onBtn || null;
+  b.hidden = false;
+}
+document.getElementById("banner-x").addEventListener("click", () => { document.getElementById("banner").hidden = true; });
+window.addEventListener("offline", () => showBanner("오프라인이에요. 저장해 둔 가사는 그대로 볼 수 있어요."));
+window.addEventListener("online", () => { document.getElementById("banner").hidden = true; });
+
+if ("serviceWorker" in navigator && location.protocol === "https:"){
+  navigator.serviceWorker.register("./sw.js").then(reg => {
+    const ask = w => showBanner("새 버전이 준비됐어요", "새로고침", () => w.postMessage("skip-waiting"));
+    if (reg.waiting && navigator.serviceWorker.controller) ask(reg.waiting);
+    reg.addEventListener("updatefound", () => {
+      const w = reg.installing;
+      w && w.addEventListener("statechange", () => { if (w.state === "installed" && navigator.serviceWorker.controller) ask(w); });
+    });
+  }).catch(() => {});
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (!reloaded){ reloaded = true; location.reload(); } });
+}
+
+applyPrefs();
+router();
+</script>
+</body>
+</html>

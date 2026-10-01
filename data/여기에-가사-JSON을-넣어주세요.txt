@@ -1,0 +1,10 @@
+이 폴더에 ms-victoria.json 파일을 넣으면 모든 방문자에게 가사가 보입니다.
+
+만드는 법
+1. 친구분 사이트(https://zivelz.github.io/Uma_Call_Test/)를 엽니다.
+2. "💾 데이터 저장(JSON)" 버튼을 누르면 ms_victoria_1line_call_cards.json 파일이 받아집니다.
+3. 파일 이름을 ms-victoria.json 으로 바꿔 이 폴더에 넣습니다.
+4. sw.js 첫 부분의 CACHE_VERSION 숫자를 올리고 다시 올립니다.
+
+파일 형식: [{ "time": 초, "action": "", "jp": "", "kr": "", "pron": "", "call": "" }, ...]
+(가사에는 저작권이 있으니 원작자의 허락 범위 안에서 사용해 주세요)

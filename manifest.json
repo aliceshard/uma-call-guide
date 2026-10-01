@@ -1,0 +1,16 @@
+{
+  "name": "우마무스메 라이브 콜 가이드",
+  "short_name": "콜 가이드",
+  "description": "우마무스메 라이브 이벤트 비공식 팬 제작 콜 가이드",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#121A17",
+  "theme_color": "#121A17",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
