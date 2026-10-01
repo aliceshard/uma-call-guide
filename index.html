@@ -71,7 +71,7 @@ svg.i{ width:1em; height:1em; flex:none; stroke:currentColor; fill:none; stroke-
   display:inline-grid; place-items:center; flex:none;
   width:2.1em; height:2.1em; border-radius:4px;
   background:var(--g-bg); color:var(--g-fg);
-  font:400 1em/1 var(--f-display); box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);
+  font:400 1em/1 var(--f-display); box-shadow:inset 0 0 0 1px rgba(0,0,0,.18), 0 0 0 1px var(--line);
 }
 
 /* ─────────────────────────── 공통 페이지 ─────────────────────────── */
@@ -352,6 +352,38 @@ body.song-mode .banner{ bottom:calc(76px + env(safe-area-inset-bottom,0px)); }
 @media (prefers-reduced-motion: reduce){
   *{ transition:none !important; animation:none !important; }
 }
+
+/* ── 자동 곡 목록 · 곡 파일 도구 ── */
+.loading{ padding:38vh 20px 0; text-align:center; color:var(--muted); }
+.icon-btn:disabled{ opacity:.3; cursor:default; background:transparent; }
+.badge{ display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; background:var(--turf-soft); color:var(--turf); font-size:.74rem; font-weight:600; vertical-align:.1em; }
+.lib-note{ margin:14px 4px 0; color:var(--muted); font-size:.85rem; }
+.lib-warn{ color:var(--call); }
+.empty-lib{ padding:28px 4px; color:var(--muted); }
+.empty-lib b{ display:block; color:var(--text); margin-bottom:4px; }
+.tools{ margin-top:40px; border-radius:var(--radius-m); background:var(--surface); border:1px solid var(--line); }
+.tools summary{ display:flex; align-items:center; gap:8px; min-height:56px; padding:0 18px; cursor:pointer; font-weight:600; list-style:none; }
+.tools summary::-webkit-details-marker{ display:none; }
+.tools summary .chev{ margin-left:auto; color:var(--muted); transition:transform .2s; }
+.tools[open] summary .chev{ transform:rotate(180deg); }
+.tools-body{ padding:0 18px 18px; font-size:.92rem; }
+.tools-body > p{ margin:0 0 10px; color:var(--muted); }
+.field{ display:block; margin:14px 0 0; }
+.field > span{ display:block; margin-bottom:4px; font-size:.84rem; font-weight:600; color:var(--muted); }
+.field input[type="text"], .field input[type="url"], .field input[type="number"]{
+  width:100%; min-height:42px; padding:0 12px; border-radius:var(--radius-s);
+  border:1px solid var(--line); background:var(--bg); color:var(--text); font:inherit; font-size:16px;
+}
+.field .suffix{ display:flex; align-items:center; gap:6px; }
+.field .suffix input{ flex:1; }
+.field-hint{ display:block; margin-top:4px; font-size:.8rem; color:var(--muted); }
+.tool-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+.tool-msg{ min-height:1.3em; margin:10px 0 0; font-size:.86rem; }
+.local-list{ list-style:none; margin:16px 0 0; padding:0; border-top:1px solid var(--line); }
+.local-list li{ display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); }
+.local-list li span{ flex:1; min-width:0; }
+.song-page .topbar .song-title-wrap{ justify-content:center; }
+.song-page .topbar .song-title-wrap h1{ flex:0 1 auto; }
 </style>
 </head>
 <body>
@@ -386,37 +418,41 @@ const CONFIG = {
   /* 공지 이미지 — images/notice/ 에 넣고 한 줄씩 등록. 파일이 없으면 조용히 빠집니다 */
   notices: [],                                      // 예) { src:"./images/notice/01.jpg", title:"입장 안내" }
 
-  credit: "비공식 팬 제작 · 실제 현장 분위기에 따라 달라질 수 있어요"
+  credit: "비공식 팬 제작 · 실제 현장 분위기에 따라 달라질 수 있어요",
+
+  /* 곡 파일 폴더 */
+  dataDir: "./data/",
+  /* GitHub 저장소 — 비워 두면 주소(아이디.github.io/저장소)에서 자동으로 알아냅니다.
+     개인 도메인을 붙였다면 직접 적어 주세요. 예) { owner:"myname", repo:"uma-call-guide" } */
+  github: { owner:"", repo:"" }
 };
 
 /* ═════════════════════════════════════════════════════════════
-   ★ 2. 곡 목록 — 지금은 한 곡만 있습니다
-   cards 형식은 친구분 사이트(Ms. VICTORIA Live Call Guide)의
-   JSON 저장 형식과 똑같습니다:
-     { time, action, jp, kr, pron, call }
-       time   : 영상 기준 시작 초
-       action : 동작 (노랑)
-       jp     : 원문 가사
-       kr     : 번역
-       pron   : 독음
-       call   : 콜 (분홍)
-   어느 줄에든 [oi] [clap] [wave] [jump] [cheer] [sing] 을 적으면
-   그 자리에 아이콘이 들어갑니다.
+   ★ 2. 곡 목록은 data 폴더에서 자동으로 만들어집니다
+   data/ 에 곡 파일(.json)을 넣으면 목록에 나타납니다. 코드는 고칠 필요 없어요.
 
-   가사 데이터 넣는 법 (셋 중 하나)
-     ① data/ms-victoria.json 파일로 저장 (친구분 사이트의 "💾 데이터 저장"
-        으로 받은 파일 그대로) → 모든 방문자에게 적용
-     ② 곡 목록 화면 아래 "JSON 파일 불러오기" → 이 기기에서만 적용
-     ③ 아래 cards 배열에 직접 입력
-   아래 기본 데이터에는 타이밍·동작·콜만 들어 있고 가사는 비어 있습니다.
+   곡 파일 형식
+     {
+       "title":   "Ms. VICTORIA",                                  ← 목록·화면 제목
+       "youtube": "https://www.youtube.com/watch?v=vsnyQd6Ur-M",  ← 유튜브 링크 (youtu.be, shorts 링크도 됨)
+       "sub":     "",                                              ← 부제 (선택)
+       "order":   1,                                               ← 목록 순서 (선택, 작을수록 위)
+       "cards":   [ { "time":1.3, "action":"", "jp":"", "kr":"", "pron":"", "call":"" }, ... ]
+     }
+   · cards 의 한 줄 형식은 친구분 사이트의 JSON 저장 형식과 같습니다.
+   · 친구분 사이트에서 저장한 파일(배열만 있는 형식)을 그대로 넣어도 되지만,
+     그러면 제목은 파일 이름이 되고 영상은 나오지 않습니다.
+     곡 목록 화면 아래 "곡 파일 만들기"에서 제목·유튜브 링크를 붙여 저장할 수 있어요.
+   · 파일 이름이 _ 로 시작하면 목록에서 빠집니다 (임시 파일 보관용).
+   · 줄 어디에든 [oi] [clap] [wave] [jump] [cheer] [sing] 을 적으면 아이콘이 들어갑니다.
    ═════════════════════════════════════════════════════════════ */
-const SONGS = [
+
+/* data 폴더를 아예 읽을 수 없을 때(파일만 열었을 때, 미리보기 등)만 보여 주는 예시 곡.
+   타이밍·동작·콜만 있고 가사는 비어 있습니다. */
+const FALLBACK_SONGS = [
   {
-    id: "ms-victoria",
     title: "Ms. VICTORIA",
-    sub: "",                              // 부제·부르는 캐릭터 등 (선택)
-    youtubeId: "vsnyQd6Ur-M",
-    dataUrl: "./data/ms-victoria.json",
+    youtube: "https://www.youtube.com/watch?v=vsnyQd6Ur-M",
     cards: [
       { time:1.3 }, { time:12.7 },
       { time:27.3, action:"손가락으로 1, 2, 3, 4 펼치기", call:"원 투 쓰리 포!" },
@@ -469,6 +505,7 @@ const TOKEN_MAP = { oi:"shout", sing:"sing", wave:"hand", clap:"clap", cheer:"ch
 const CUE_LABEL = { shout:"외치기", sing:"따라 부르기", hand:"손 동작", clap:"박수", cheer:"환호", jump:"점프" };
 const svg = (k, cls="") => `<svg class="i i-${k} ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]||""}</svg>`;
 const CHEV_R = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+const CHEV_L = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
 const CHEV_D = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 const PLAY = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor;stroke:none"><path d="M8 5.5v13l11-6.5z"/></svg>';
 const PAUSE = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="fill:currentColor;stroke:none"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>';
@@ -489,14 +526,14 @@ function store(key, val){
   }catch(e){ return null; }
 }
 
-/* ── 데이터 정리: 친구분 형식 그대로 + Vaundy 형식(ko/tr)도 받아 줌 ── */
+/* ═══════════════════════ 곡 파일 읽기 ═══════════════════════ */
 function clean(v){
   if (Array.isArray(v)) v = v.map(x => typeof x === "string" ? x : (x && x.text) || "").join("");
   v = String(v ?? "");
   return v.trim() ? v.replace(/^[ \t\u3000]+|\s+$/g, "") : "";
 }
 function normalizeCards(arr){
-  if (!Array.isArray(arr)) throw new Error("배열 형식이 아니에요");
+  if (!Array.isArray(arr)) throw new Error("cards 배열이 없어요");
   const out = arr.map(c => ({
     time: Number(c.time) || 0,
     action: clean(c.action),
@@ -505,31 +542,130 @@ function normalizeCards(arr){
     pron: clean(c.pron ?? c.ko),
     call: clean(c.call ?? c.bg)
   })).sort((a,b) => a.time - b.time);
-  if (!out.length) throw new Error("줄이 하나도 없어요");
+  if (!out.length) throw new Error("가사 줄이 하나도 없어요");
   return out;
 }
-const songState = {};   // id → { cards, source }
-async function loadSong(song){
-  if (songState[song.id]) return songState[song.id];
-  const saved = store("data:" + song.id);
-  if (saved){
-    try{ return songState[song.id] = { cards: normalizeCards(JSON.parse(saved)), source:"device" }; }
-    catch(e){ store("data:" + song.id, null); }
-  }
-  if (song.dataUrl && location.protocol !== "file:"){
-    try{
-      const res = await fetch(song.dataUrl, { cache:"no-cache" });
-      if (res.ok) return songState[song.id] = { cards: normalizeCards(await res.json()), source:"file" };
-    }catch(e){ /* 파일이 없으면 기본 데이터 */ }
-  }
-  return songState[song.id] = { cards: normalizeCards(song.cards), source:"builtin" };
+/* 유튜브 링크 → 영상 ID (watch?v= · youtu.be · shorts · embed · live · ID만 모두 인식) */
+function ytId(v){
+  v = String(v || "").trim();
+  if (!v) return "";
+  if (/^[\w-]{11}$/.test(v)) return v;
+  try{
+    const u = new URL(v);
+    if (/youtu\.be$/.test(u.hostname)) return u.pathname.slice(1, 12);
+    if (u.searchParams.get("v")) return u.searchParams.get("v").slice(0, 11);
+    const m = u.pathname.match(/\/(embed|shorts|live|v)\/([\w-]{11})/);
+    if (m) return m[2];
+  }catch(e){}
+  return "";
 }
+const isSongFile = n => /\.json$/i.test(n) && n.toLowerCase() !== "index.json" && !/^[_.]/.test(n);
+const baseName = f => String(f).replace(/^.*\//, "").replace(/\.json$/i, "");
+function parseSong(raw, file){
+  const meta = Array.isArray(raw) ? {} : (raw || {});
+  const cards = normalizeCards(Array.isArray(raw) ? raw : (meta.cards || meta.lyrics || meta.lines));
+  const youtubeRaw = meta.youtube || meta.youtubeUrl || meta.youtubeId || meta.video || "";
+  return {
+    id: String(meta.id || baseName(file)).trim().replace(/\s+/g, "-"),
+    file,
+    title: String(meta.title || baseName(file)),
+    sub: String(meta.sub || ""),
+    order: Number.isFinite(Number(meta.order)) && meta.order !== "" && meta.order != null ? Number(meta.order) : 9999,
+    youtube: String(youtubeRaw),
+    youtubeId: ytId(youtubeRaw),
+    cards
+  };
+}
+
+/* data 폴더에서 곡 파일 목록 찾기 — 위에서부터 차례로 시도
+   ① data/index.json  (GitHub Actions 가 올릴 때마다 자동으로 만듦)
+   ② GitHub API        (Actions 없이 브랜치로 배포했을 때)
+   ③ 폴더 목록 페이지   (내 컴퓨터에서 python -m http.server 등으로 테스트할 때)
+   ④ 마지막으로 찾았던 목록 (오프라인) */
+function guessGitHub(){
+  const g = CONFIG.github || {};
+  if (g.owner && g.repo) return { owner:g.owner, repo:g.repo };
+  const h = location.hostname;
+  if (!h.endsWith(".github.io")) return null;
+  const owner = h.split(".")[0];
+  const seg = location.pathname.split("/").filter(Boolean)[0];
+  return { owner, repo: seg && !seg.includes(".") ? seg : `${owner}.github.io` };
+}
+async function discoverFiles(){
+  const dir = CONFIG.dataDir;
+  if (location.protocol === "file:") return { files:[], how:"file" };
+  try{
+    const r = await fetch(dir + "index.json", { cache:"no-cache" });
+    if (r.ok){
+      const j = await r.json();
+      const files = (Array.isArray(j) ? j : (j.files || (j.songs || []).map(s => s.file))).filter(isSongFile);
+      store("files", JSON.stringify(files));
+      return { files, how:"index" };
+    }
+  }catch(e){}
+  const gh = guessGitHub();
+  if (gh && navigator.onLine){
+    try{
+      const path = dir.replace(/^\.?\//, "").replace(/\/$/, "");
+      const r = await fetch(`https://api.github.com/repos/${gh.owner}/${gh.repo}/contents/${path}`, { headers:{ Accept:"application/vnd.github+json" } });
+      if (r.ok){
+        const files = (await r.json()).filter(x => x.type === "file" && isSongFile(x.name)).map(x => x.name);
+        store("files", JSON.stringify(files));
+        return { files, how:"github" };
+      }
+    }catch(e){}
+  }
+  try{
+    const r = await fetch(dir, { cache:"no-cache" });
+    if (r.ok && /html/.test(r.headers.get("content-type") || "")){
+      const html = await r.text();
+      const files = [...new Set([...html.matchAll(/href="([^"?#]+\.json)"/gi)]
+        .map(m => { try{ return decodeURIComponent(m[1].split("/").pop()); }catch(e){ return m[1].split("/").pop(); } }))]
+        .filter(isSongFile);
+      if (files.length) return { files, how:"listing" };
+    }
+  }catch(e){}
+  try{
+    const saved = JSON.parse(store("files") || "null");
+    if (Array.isArray(saved) && saved.length) return { files:saved, how:"saved" };
+  }catch(e){}
+  return { files:[], how:"none" };
+}
+
+const LIB = { songs:[], remote:[], how:"none", errors:[], fallback:false };
+function localSongs(){
+  try{ return (JSON.parse(store("local-songs") || "[]")).map(s => ({ ...s, cards: normalizeCards(s.cards), source:"local" })); }
+  catch(e){ return []; }
+}
+async function loadLibrary(){
+  const { files, how } = await discoverFiles();
+  LIB.how = how; LIB.errors = [];
+  const loaded = await Promise.all(files.map(async f => {
+    try{
+      const r = await fetch(CONFIG.dataDir + encodeURIComponent(f), { cache:"no-cache" });
+      if (!r.ok) throw new Error("파일을 찾지 못했어요 (" + r.status + ")");
+      return { ...parseSong(await r.json(), f), source:"data" };
+    }catch(e){ LIB.errors.push({ file:f, msg:e.message }); return null; }
+  }));
+  LIB.remote = loaded.filter(Boolean);
+  rebuildLibrary();
+}
+function rebuildLibrary(){
+  let songs = [...LIB.remote, ...localSongs()];
+  LIB.fallback = !LIB.remote.length;
+  if (!songs.length) songs = FALLBACK_SONGS.map((s, i) => ({ ...parseSong(s, "example-" + (i+1)), source:"example" }));
+  songs.sort((a,b) => a.order - b.order || a.title.localeCompare(b.title, "ko"));
+  const seen = new Set();
+  songs.forEach(s => { let id = s.id || "song", n = 2; while (seen.has(id)) id = `${s.id}-${n++}`; s.id = id; seen.add(id); });
+  LIB.songs = songs;
+}
+
 function cuesOf(c){
   const s = `${c.action} ${c.call}`;
   const set = new Set();
   if (/어이|오이|빅토리|외치|구호|\[oi\]/i.test(s) || (c.call && !/\[(sing|cheer|clap|wave|jump)\]/.test(c.call))) set.add("shout");
   if (/박수|\[clap\]/.test(s)) set.add("clap");
-  if (/흔들|손가락|손을|펼치|\[wave\]/.test(s)) set.add("hand");
+  if (/흔들|손가락|손을|펼치|펼침|\[wave\]/.test(s)) set.add("hand");
   if (/환호|\[cheer\]/.test(s)) set.add("cheer");
   if (/점프|\[jump\]/.test(s)) set.add("jump");
   if (/따라 ?부르|떼창|\[sing\]/.test(s)) set.add("sing");
@@ -539,12 +675,11 @@ const fmtText = t => esc(t).replace(/\[(oi|sing|wave|clap|cheer|jump)\]/g, (m,k)
 function songStats(cards){
   const calls = cards.filter(c => c.call).length;
   const cues = new Set(); cards.forEach(c => cuesOf(c).forEach(k => cues.add(k)));
-  const hasLyrics = cards.some(c => c.jp || c.pron || c.kr);
-  return { calls, cues:[...cues], hasLyrics };
+  return { calls, cues:[...cues] };
 }
-function gateHtml(i, cls=""){
+function gateHtml(i, cls="", id=""){
   const [bg, fg] = GATE_COLORS[i % 8];
-  return `<span class="gate ${cls}" style="--g-bg:${bg};--g-fg:${fg}" aria-hidden="true">${i+1}</span>`;
+  return `<span ${id ? `id="${id}" ` : ""}class="gate ${cls}" style="--g-bg:${bg};--g-fg:${fg}" aria-hidden="true">${i+1}</span>`;
 }
 
 /* ── 테마 · 표시 설정 ── */
@@ -572,11 +707,12 @@ function router(){
   const hash = location.hash.replace(/^#\/?/, "");
   if (hash.startsWith("song/")){
     let id = hash.slice(5); try{ id = decodeURIComponent(id); }catch(e){}
-    const song = SONGS.find(s => s.id === id);
+    const song = LIB.songs.find(s => s.id === id);
     if (song) return renderSong(song);
   }
   if (hash === "guide") return renderGuide();
   renderHome();
+  window.scrollTo(0, 0);
 }
 window.addEventListener("hashchange", router);
 
@@ -586,7 +722,7 @@ function renderHome(){
   document.title = CONFIG.eventTitle.join(" ");
   const v = CONFIG.venue || {};
   const hasInfo = v.name || v.address || (CONFIG.links && CONFIG.links.length);
-  const s0 = SONGS[0];
+  const n = LIB.songs.length;
   app.innerHTML = `
     <div class="home-head"><button class="icon-btn" id="theme-btn" aria-label="화면 밝기 바꾸기" title="화면 밝기 바꾸기">${MOON}</button></div>
     <main class="page">
@@ -605,7 +741,7 @@ function renderHome(){
 
       <a class="go-guide" href="#/guide">
         ${gateHtml(0)}
-        <span><b>콜 가이드</b><small>${SONGS.length === 1 ? esc(s0.title) + " 한 곡" : SONGS.length + "곡"} · 영상에 맞춰 콜·동작 확인</small></span>
+        <span><b>콜 가이드</b><small>${n === 1 ? esc(LIB.songs[0].title) + " 한 곡" : n + "곡"} · 영상에 맞춰 콜·동작 확인</small></span>
         <span class="chev">${CHEV_R}</span>
       </a>
 
@@ -736,8 +872,10 @@ function openViewer(n, trigger){
 }
 
 /* ═══════════════════════ 곡 목록 ═══════════════════════ */
-async function renderGuide(){
+function renderGuide(){
   document.title = "콜 가이드 · " + CONFIG.eventTitle.join(" ");
+  const how = { index:"자동 목록(index.json)", github:"GitHub 저장소", listing:"폴더 목록", saved:"마지막으로 저장된 목록", none:"", file:"" }[LIB.how] || "";
+  const toolsOpen = sessionStorage.getItem("tools-open") === "1";
   app.innerHTML = `
     <div class="topbar"><a class="icon-btn" href="#/" aria-label="홈으로" title="홈으로">←</a><h1>콜 가이드</h1></div>
     <main class="page">
@@ -752,67 +890,116 @@ async function renderGuide(){
         <span class="c-act">${svg("cheer")}환호</span>
         <span class="c-act">${svg("clap")}박수</span>
       </div>
-      <ul class="song-list" id="song-list"></ul>
-      <section class="data-tools" id="data-tools"></section>
+      <ul class="song-list">
+        ${LIB.songs.map((s, i) => {
+          const st = songStats(s.cards);
+          const badge = s.source === "local" ? `<span class="badge">이 기기 미리보기</span>` : s.source === "example" ? `<span class="badge">예시</span>` : "";
+          return `<li><a class="song-row" href="#/song/${encodeURIComponent(s.id)}">
+            ${gateHtml(i)}
+            <span><span class="t">${esc(s.title)}${badge}</span>
+              <span class="m">${s.sub ? `<span>${esc(s.sub)}</span>` : ""}
+                <span class="c-call">콜 ${st.calls}줄</span>
+                <span>${st.cues.map(k => `<span class="cue-${k}" title="${CUE_LABEL[k]}">${svg(k)}</span>`).join(" ")}</span>
+                ${s.youtubeId ? "" : `<span>영상 없음</span>`}
+              </span></span>
+            <span class="chev">${CHEV_R}</span></a></li>`;
+        }).join("")}
+      </ul>
+      ${LIB.remote.length && how ? `<p class="lib-note">data 폴더에서 ${LIB.remote.length}곡을 찾았어요 · ${how}</p>` : ""}
+      ${LIB.fallback && LIB.songs.some(s => s.source === "example") ? `<p class="lib-note">data 폴더에서 곡 파일을 찾지 못해 예시 곡을 보여 주고 있어요.</p>` : ""}
+      ${LIB.errors.map(e => `<p class="lib-note lib-warn">${esc(e.file)} 을(를) 읽지 못했어요: ${esc(e.msg)}</p>`).join("")}
+
+      <details class="tools" id="tools"${toolsOpen ? " open" : ""}>
+        <summary>곡 파일 만들기 · 미리보기<span class="chev">${CHEV_D}</span></summary>
+        <div class="tools-body">
+          <p>가사 JSON에 제목과 유튜브 링크를 붙여 data 폴더에 넣을 곡 파일로 저장해요. 친구분 사이트에서 저장한 파일도, 이미 만든 곡 파일도 고를 수 있어요.</p>
+          <label class="field"><span>가사 JSON 파일</span><input type="file" id="tf-file" accept=".json,application/json"></label>
+          <label class="field"><span>곡 제목</span><input type="text" id="tf-title" autocomplete="off"></label>
+          <label class="field"><span>유튜브 링크</span><input type="url" id="tf-yt" inputmode="url" autocomplete="off" placeholder="https://www.youtube.com/watch?v=…">
+            <small class="field-hint" id="tf-yt-hint"></small></label>
+          <label class="field"><span>부제 (선택)</span><input type="text" id="tf-sub" autocomplete="off"></label>
+          <label class="field"><span>목록 순서 (선택, 작을수록 위)</span><input type="number" id="tf-order" inputmode="numeric"></label>
+          <label class="field"><span>저장할 파일 이름</span><span class="suffix"><input type="text" id="tf-name" autocomplete="off" placeholder="ms-victoria">.json</span>
+            <small class="field-hint">영문 소문자·숫자·하이픈을 권장해요. 곡 주소(#/song/파일이름)에도 쓰여요.</small></label>
+          <div class="tool-actions">
+            <button class="btn primary" type="button" id="tf-save">곡 파일 저장</button>
+            <button class="btn" type="button" id="tf-preview">이 기기에서 미리보기</button>
+          </div>
+          <p class="tool-msg" id="tf-msg" role="status"></p>
+          ${localSongs().length ? `<ul class="local-list">${localSongs().map(s => `<li><span>${esc(s.title)} <small class="note">(${esc(s.id)})</small></span><button class="btn" type="button" data-rm="${esc(s.id)}">지우기</button></li>`).join("")}</ul>` : ""}
+        </div>
+      </details>
       <p class="credits">${esc(CONFIG.credit)}</p>
     </main>`;
-  const list = document.getElementById("song-list");
-  for (const [i, s] of SONGS.entries()){
-    const st = await loadSong(s);
-    const stats = songStats(st.cards);
-    const li = document.createElement("li");
-    li.innerHTML = `<a class="song-row" href="#/song/${encodeURIComponent(s.id)}">
-        ${gateHtml(i)}
-        <span><span class="t">${esc(s.title)}</span>
-          <span class="m">${s.sub ? `<span>${esc(s.sub)}</span>` : ""}
-            <span class="c-call">콜 ${stats.calls}줄</span>
-            <span>${stats.cues.map(k => `<span class="cue-${k}" title="${CUE_LABEL[k]}">${svg(k)}</span>`).join(" ")}</span>
-          </span></span>
-        <span class="chev">${CHEV_R}</span></a>`;
-    list.appendChild(li);
-  }
-  paintDataTools();
+  setupTools();
 }
-function paintDataTools(){
-  const box = document.getElementById("data-tools");
-  if (!box) return;
-  const s = SONGS[0], st = songState[s.id];
-  const label = { builtin:"기본 데이터 (타이밍·동작·콜, 가사 없음)", file:"data 폴더의 가사 파일", device:"이 기기에 불러온 파일" }[st.source];
-  box.innerHTML = `
-    <h3>가사 데이터</h3>
-    <p>지금 쓰는 데이터: <span class="src">${label}</span></p>
-    <p>친구분 사이트에서 "데이터 저장(JSON)"으로 받은 파일을 그대로 불러올 수 있어요. 불러온 파일은 이 기기에만 저장돼요.</p>
-    <div class="chips">
-      <button class="btn primary" id="imp-btn" type="button">JSON 파일 불러오기</button>
-      <button class="btn" id="exp-btn" type="button">지금 데이터 저장</button>
-      ${st.source === "device" ? `<button class="btn" id="reset-btn" type="button">불러온 파일 지우기</button>` : ""}
-    </div>
-    <p id="imp-msg" class="note" role="status" style="margin-top:10px"></p>
-    <input type="file" id="imp-file" accept=".json,application/json" hidden>`;
-  const file = document.getElementById("imp-file"), msg = document.getElementById("imp-msg");
-  document.getElementById("imp-btn").addEventListener("click", () => file.click());
-  file.addEventListener("change", () => {
-    const f = file.files[0]; if (!f) return;
+
+function slugify(s){
+  return String(s || "").toLowerCase().normalize("NFKD").replace(/[^\w\s-]/g, "").trim().replace(/[\s_]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+}
+function setupTools(){
+  const $ = id => document.getElementById(id);
+  const tools = $("tools");
+  tools.addEventListener("toggle", () => sessionStorage.setItem("tools-open", tools.open ? "1" : ""));
+  let picked = null;   // { cards, meta, file }
+  const msg = (t, warn) => { $("tf-msg").textContent = t; $("tf-msg").classList.toggle("lib-warn", !!warn); };
+  const ytHint = () => {
+    const v = $("tf-yt").value.trim(), id = ytId(v);
+    $("tf-yt-hint").textContent = !v ? "" : id ? `영상 ID: ${id}` : "유튜브 링크를 인식하지 못했어요. 주소를 다시 확인해 주세요.";
+  };
+  $("tf-yt").addEventListener("input", ytHint);
+  $("tf-title").addEventListener("input", () => { if (!$("tf-name").dataset.touched) $("tf-name").value = slugify($("tf-title").value); });
+  $("tf-name").addEventListener("input", () => { $("tf-name").dataset.touched = "1"; });
+  $("tf-file").addEventListener("change", () => {
+    const f = $("tf-file").files[0]; if (!f) return;
     const r = new FileReader();
     r.onload = () => {
       try{
-        const raw = JSON.parse(r.result);
-        const cards = normalizeCards(Array.isArray(raw) ? raw : raw.cards || raw.lyrics);
-        store("data:" + s.id, JSON.stringify(cards));
-        songState[s.id] = { cards, source:"device" };
-        renderGuide();
-      }catch(e){ msg.textContent = "불러오지 못했어요: " + e.message + ". 줄 목록이 담긴 JSON 파일인지 확인해 주세요."; }
+        const s = parseSong(JSON.parse(r.result), f.name);
+        picked = s;
+        if (!Array.isArray(JSON.parse(r.result))){
+          $("tf-title").value = s.title; $("tf-yt").value = s.youtube; $("tf-sub").value = s.sub;
+          $("tf-order").value = s.order === 9999 ? "" : s.order;
+        }
+        if (!$("tf-name").dataset.touched) $("tf-name").value = slugify($("tf-title").value) || slugify(baseName(f.name));
+        ytHint();
+        msg(`${s.cards.length}줄을 읽었어요. 제목과 유튜브 링크를 확인해 주세요.`);
+      }catch(e){ picked = null; msg("읽지 못했어요: " + e.message + ". 가사 줄 목록이 담긴 JSON 파일인지 확인해 주세요.", true); }
     };
     r.readAsText(f);
   });
-  document.getElementById("exp-btn").addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(st.cards, null, 2)], { type:"application/json" });
+  const build = () => {
+    if (!picked){ msg("먼저 가사 JSON 파일을 골라 주세요.", true); return null; }
+    const title = $("tf-title").value.trim();
+    if (!title){ msg("곡 제목을 적어 주세요.", true); $("tf-title").focus(); return null; }
+    const name = slugify($("tf-name").value) || slugify(title) || "song";
+    const order = $("tf-order").value.trim();
+    const yt = $("tf-yt").value.trim();
+    const song = { title, youtube: ytId(yt) ? yt : "", sub: $("tf-sub").value.trim() };
+    if (order !== "") song.order = Number(order);
+    song.cards = picked.cards;
+    return { name, song };
+  };
+  $("tf-save").addEventListener("click", () => {
+    const b = build(); if (!b) return;
+    const blob = new Blob([JSON.stringify(b.song, null, 2) + "\n"], { type:"application/json" });
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download = s.id + ".json"; a.click();
+    a.href = URL.createObjectURL(blob); a.download = b.name + ".json"; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    msg(`${b.name}.json 을 저장했어요. 저장소의 data 폴더에 올리면 목록에 나타나요.`);
   });
-  const rb = document.getElementById("reset-btn");
-  if (rb) rb.addEventListener("click", () => { store("data:" + s.id, null); delete songState[s.id]; renderGuide(); });
+  $("tf-preview").addEventListener("click", () => {
+    const b = build(); if (!b) return;
+    const list = JSON.parse(store("local-songs") || "[]").filter(s => s.id !== b.name);
+    list.push({ ...parseSong(b.song, b.name + ".json"), id:b.name });
+    try{ store("local-songs", JSON.stringify(list)); }catch(e){ msg("이 기기에 저장하지 못했어요.", true); return; }
+    rebuildLibrary(); renderGuide();
+  });
+  app.querySelectorAll("[data-rm]").forEach(btn => btn.addEventListener("click", () => {
+    const list = JSON.parse(store("local-songs") || "[]").filter(s => s.id !== btn.dataset.rm);
+    store("local-songs", list.length ? JSON.stringify(list) : null);
+    rebuildLibrary(); renderGuide();
+  }));
 }
 
 /* ═══════════════════════ 곡 화면 ═══════════════════════ */
@@ -821,7 +1008,7 @@ let syncTimer = null, lastActive = -1, scrollRaf = null, userScrollUntil = 0, wa
 
 /* 재생 시계 — 유튜브가 되면 유튜브 시간, 안 되면 내부 타이머로 대신 */
 const clock = {
-  mode:"none", player:null, ready:false, base:0, startedAt:0, running:false, duration:0,
+  mode:"none", player:null, base:0, startedAt:0, running:false,
   now(){
     if (this.mode === "yt"){ try{ return this.player.getCurrentTime() || 0; }catch(e){ return 0; } }
     return this.running ? this.base + (performance.now() - this.startedAt)/1000 : this.base;
@@ -852,18 +1039,20 @@ const clock = {
   }
 };
 
-async function renderSong(song){
+function renderSong(song){
   document.body.classList.add("song-mode");
   document.title = song.title + " · 콜 가이드";
-  const st = await loadSong(song);
-  const idx = SONGS.indexOf(song);
-  cur = { song, cards: st.cards, idx };
+  const idx = LIB.songs.indexOf(song);
+  const many = LIB.songs.length > 1;
+  cur = { song, cards: song.cards, idx };
   lastActive = -1;
   app.innerHTML = `
     <div class="song-page">
       <div class="topbar">
         <a class="icon-btn" href="#/guide" aria-label="곡 목록으로" title="곡 목록으로">←</a>
+        ${many ? `<button class="icon-btn" id="prev-song" aria-label="이전 곡" title="이전 곡"${idx === 0 ? " disabled" : ""}>${CHEV_L}</button>` : ""}
         <div class="song-title-wrap">${gateHtml(idx)}<h1>${esc(song.title)}</h1></div>
+        ${many ? `<button class="icon-btn" id="next-song" aria-label="다음 곡" title="다음 곡"${idx === LIB.songs.length-1 ? " disabled" : ""}>${CHEV_R}</button>` : ""}
         <button class="icon-btn" id="view-btn" aria-label="표시 설정" title="표시 설정" aria-haspopup="dialog">${SLIDERS}</button>
       </div>
       <div class="song-main">
@@ -873,7 +1062,7 @@ async function renderSong(song){
             <div class="course-track" id="course" role="slider" tabindex="0" aria-label="곡 위치" aria-valuemin="0" aria-valuenow="0">
               <div class="course-rail"></div><div class="course-fill" id="course-fill"></div>
               <div id="ticks"></div>
-              ${gateHtml(idx, "runner").replace('class="gate', 'id="runner" class="gate')}
+              ${gateHtml(idx, "runner", "runner")}
             </div>
             <div class="course-meta"><span>출발</span><span class="num" id="time-read">0:00 / 0:00</span><span>골</span></div>
           </div>
@@ -895,14 +1084,17 @@ async function renderSong(song){
   setupPlayer(song);
   syncTimer = setInterval(sync, SYNC_INTERVAL_MS);
 }
+function goNeighbor(step){
+  if (!cur) return;
+  const s = LIB.songs[cur.idx + step];
+  if (s) location.hash = "#/song/" + encodeURIComponent(s.id);
+}
 
 function paintLyrics(){
   const ol = document.getElementById("lyrics");
-  let n = 0;
   ol.innerHTML = cur.cards.map((c, i) => {
     const cues = cuesOf(c);
     const empty = !(c.action || c.jp || c.pron || c.kr || c.call);
-    if (empty) n++;
     return `<li><button class="line${c.call ? " has-call" : ""}" data-i="${i}" data-time="${c.time}" type="button">
       <span class="line-gutter"><span class="line-time">${fmtTime(c.time)}</span>
         <span class="cues">${cues.map(k => `<span class="cue-${k}" title="${CUE_LABEL[k]}">${svg(k)}</span>`).join("")}</span></span>
@@ -921,7 +1113,7 @@ function paintTicks(){
   const d = clock.dur();
   document.getElementById("ticks").innerHTML = cur.cards.map(c => {
     const cls = c.call ? "call" : c.action ? "act" : "";
-    return cls ? `<span class="tick ${cls}" style="left:${(c.time/d*100).toFixed(2)}%"></span>` : "";
+    return cls ? `<span class="tick ${cls}" style="left:${Math.min(100, c.time/d*100).toFixed(2)}%"></span>` : "";
   }).join("");
 }
 function updateLyricsPadding(){
@@ -933,8 +1125,7 @@ function updateLyricsPadding(){
 }
 
 function bindSongControls(){
-  const ol = document.getElementById("lyrics");
-  ol.addEventListener("click", e => {
+  document.getElementById("lyrics").addEventListener("click", e => {
     const b = e.target.closest(".line"); if (!b) return;
     userScrollUntil = 0;
     clock.seek(Number(b.dataset.time));
@@ -955,13 +1146,15 @@ function bindSongControls(){
     if (prefs.autoscroll){ userScrollUntil = 0; sync(true); }
   });
   document.getElementById("view-btn").addEventListener("click", e => openViewSheet(e.currentTarget));
+  document.getElementById("prev-song")?.addEventListener("click", () => goNeighbor(-1));
+  document.getElementById("next-song")?.addEventListener("click", () => goNeighbor(1));
 
   const course = document.getElementById("course");
   const seekFrom = x => { const r = course.getBoundingClientRect(); clock.seek(Math.min(1, Math.max(0, (x - r.left)/r.width)) * clock.dur()); sync(true); };
-  course.addEventListener("pointerdown", e => { seekFrom(e.clientX); });
+  course.addEventListener("pointerdown", e => seekFrom(e.clientX));
   course.addEventListener("keydown", e => {
-    if (e.key === "ArrowLeft"){ clock.seek(clock.now() - 5); e.preventDefault(); }
-    if (e.key === "ArrowRight"){ clock.seek(clock.now() + 5); e.preventDefault(); }
+    if (e.key === "ArrowLeft"){ clock.seek(clock.now() - 5); e.preventDefault(); e.stopPropagation(); }
+    if (e.key === "ArrowRight"){ clock.seek(clock.now() + 5); e.preventDefault(); e.stopPropagation(); }
   });
   document.addEventListener("keydown", songKeys);
   window.addEventListener("resize", onResize);
@@ -969,8 +1162,10 @@ function bindSongControls(){
 function songKeys(e){
   if (!cur || document.querySelector(".sheet")) return;
   const tag = (e.target.tagName || "").toLowerCase();
-  if (tag === "input" || tag === "textarea") return;
+  if (tag === "input" || tag === "textarea" || e.target.id === "course") return;
   if (e.key === " " && tag !== "button"){ e.preventDefault(); clock.playing() ? clock.pause() : clock.play(); }
+  if (e.key === "ArrowLeft") goNeighbor(-1);
+  if (e.key === "ArrowRight") goNeighbor(1);
 }
 let lastW = innerWidth, lastH = innerHeight;
 function onResize(){
@@ -1014,22 +1209,23 @@ function scrollToLine(el){
   scrollRaf = requestAnimationFrame(step);
 }
 
-/* 유튜브 플레이어 — 실패하면 타이머 모드 */
+/* 유튜브 플레이어 — 곡 파일의 youtube 링크를 씀. 링크가 없거나 실패하면 타이머 모드 */
 let ytApiState = "idle";   // idle | loading | ready | failed
 function setupPlayer(song){
   clock.mode = "none"; clock.base = 0; clock.running = false;
   const status = document.getElementById("status");
-  const fallback = (why) => {
+  const fallback = (title, why) => {
     if (!cur || cur.song !== song || clock.mode === "yt") return;
     clock.mode = "timer";
     const frame = document.getElementById("video-frame");
-    frame.innerHTML = `<div class="video-fallback"><b>영상을 불러오지 못했어요</b>
+    frame.innerHTML = `<div class="video-fallback"><b>${esc(title || "영상을 불러오지 못했어요")}</b>
       <span>재생 버튼을 누르면 가사가 타이머로 넘어가요.</span>
-      <a href="https://www.youtube.com/watch?v=${esc(song.youtubeId)}" target="_blank" rel="noopener">유튜브에서 열기</a></div>`;
+      ${song.youtubeId ? `<a href="https://www.youtube.com/watch?v=${esc(song.youtubeId)}" target="_blank" rel="noopener">유튜브에서 열기</a>` : ""}</div>`;
     status.textContent = why || "영상 없이 타이머로 진행해요. 가사를 탭하면 그 위치부터 시작해요.";
     onPlayState();
   };
-  if (!navigator.onLine){ fallback("오프라인이에요. 가사를 탭하거나 재생을 누르면 타이머로 진행해요."); return; }
+  if (!song.youtubeId){ fallback("이 곡에는 유튜브 링크가 없어요", "곡 파일에 \"youtube\" 링크를 넣으면 영상이 나와요. 지금은 타이머로 진행해요."); return; }
+  if (!navigator.onLine){ fallback("오프라인이에요", "가사를 탭하거나 재생을 누르면 타이머로 진행해요."); return; }
   const create = () => {
     if (!cur || cur.song !== song) return;
     try{
@@ -1043,7 +1239,7 @@ function setupPlayer(song){
             paintTicks(); sync(true);
           },
           onStateChange: () => onPlayState(),
-          onError: () => fallback()
+          onError: () => fallback("이 영상을 재생할 수 없어요")
         }
       });
     }catch(e){ fallback(); }
@@ -1059,7 +1255,7 @@ function setupPlayer(song){
       document.head.appendChild(s);
     }
   }
-  setTimeout(() => { if (clock.mode !== "yt") fallback(); }, 7000);
+  setTimeout(() => { if (cur && cur.song === song && clock.mode !== "yt") fallback(); }, 7000);
 }
 function onPlayState(){
   const b = document.getElementById("play-btn"); if (!b) return;
@@ -1076,8 +1272,7 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 function leaveSong(){
   clearInterval(syncTimer); clearInterval(cdTimer); cancelAnimationFrame(scrollRaf);
   if (clock.player){ try{ clock.player.destroy(); }catch(e){} clock.player = null; }
-  if (clock.mode === "timer") clock.pause();
-  clock.mode = "none"; clock.running = false;
+  clock.mode = "none"; clock.running = false; clock.base = 0;
   document.removeEventListener("keydown", songKeys);
   window.removeEventListener("resize", onResize);
   releaseWake();
@@ -1091,7 +1286,6 @@ function openViewSheet(trigger){
   const sh = document.createElement("div");
   sh.className = "sheet";
   const rows = [["action","동작"],["jp","원문"],["pron","독음"],["kr","번역"],["call","콜"]];
-  const themeNow = prefs.theme;
   sh.innerHTML = `<div class="sheet-backdrop" data-x></div>
     <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-h">
       <button class="icon-btn sheet-close" data-x aria-label="닫기">✕</button>
@@ -1101,7 +1295,7 @@ function openViewSheet(trigger){
       <h3>글자 크기</h3>
       <div class="seg" id="seg-scale">${[["0.9","작게"],["1","보통"],["1.2","크게"],["1.4","아주 크게"]].map(([v,l]) => `<button type="button" data-v="${v}" aria-pressed="${prefs.scale === v}">${l}</button>`).join("")}</div>
       <h3>화면 밝기</h3>
-      <div class="seg" id="seg-theme">${[["system","기기 설정"],["light","밝게"],["dark","어둡게"]].map(([v,l]) => `<button type="button" data-v="${v}" aria-pressed="${themeNow === v}">${l}</button>`).join("")}</div>
+      <div class="seg" id="seg-theme">${[["system","기기 설정"],["light","밝게"],["dark","어둡게"]].map(([v,l]) => `<button type="button" data-v="${v}" aria-pressed="${prefs.theme === v}">${l}</button>`).join("")}</div>
     </div>`;
   const close = () => { sh.remove(); document.removeEventListener("keydown", onKey); trigger.focus(); };
   const onKey = e => { if (e.key === "Escape") close(); };
@@ -1148,8 +1342,10 @@ if ("serviceWorker" in navigator && location.protocol === "https:"){
   navigator.serviceWorker.addEventListener("controllerchange", () => { if (!reloaded){ reloaded = true; location.reload(); } });
 }
 
+/* ═══════════════════════ 시작 ═══════════════════════ */
 applyPrefs();
-router();
+app.innerHTML = `<p class="loading">곡 목록을 불러오는 중이에요</p>`;
+loadLibrary().catch(() => rebuildLibrary()).then(router);
 </script>
 </body>
 </html>

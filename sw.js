@@ -1,6 +1,7 @@
 /* ─────────────────────────────────────────────────────────────
    서비스워커 — 공연장에서 인터넷이 안 돼도 가사가 열리도록 폰에 저장해 둡니다.
-   ★ 내용(가사·화면)을 고쳐서 다시 올릴 때는 CACHE_VERSION 을 꼭 올려 주세요. (v1 → v2 …)
+   CACHE_VERSION 은 GitHub Actions 가 배포할 때마다 자동으로 바꿉니다.
+   (Actions 없이 올린다면 고칠 때마다 직접 올려 주세요: v1 → v2 …)
    ───────────────────────────────────────────────────────────── */
 const CACHE_VERSION = "v1";
 const CACHE_NAME = `uma-call-guide-${CACHE_VERSION}`;
@@ -12,7 +13,7 @@ const PRECACHE = [
   "./icon-192.png",
   "./icon-512.png",
   "./apple-touch-icon.png",
-  "./data/ms-victoria.json"      // 가사 파일 — 없으면 건너뜁니다
+  "./data/index.json"            // 곡 목록 (곡 파일은 처음 열 때 자동 저장)
 ];
 const RUNTIME_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
 
